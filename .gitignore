@@ -1,0 +1,28 @@
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# Database exports (keep migrations in version control)
+/database/*.sql
+/database/*.sql.gz
+
+# Runtime files
+**/error_log
+*.log
+/tmp/*
+!/tmp/index.html
+
+# Deployment archives and backups
+*.zip
+*.tar
+*.tar.gz
+/backups/
+
+# Operating-system and editor metadata
+.DS_Store
+**/.DS_Store
+__MACOSX/
+.idea/
+.vscode/
+
