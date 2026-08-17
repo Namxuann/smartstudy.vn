@@ -280,16 +280,6 @@
                                     <?php endforeach ?>
                                 </ul>
                             </li>
-                            <li class="navbar-item dropdown">
-                                <a class="navbar-link dropdown-arrow" href="#"><?= __('Lịch sử'); ?></a>
-                                <ul class="dropdown-position-list">
-                                    <li><a href="<?= base_url('product-orders/'); ?>"><?= __('Lịch sử đơn hàng'); ?></a>
-                                    </li>
-                                    <li><a href="<?= base_url('client/logs'); ?>"><?= __('Nhật ký hoạt động'); ?></a></li>
-                                    <li><a href="<?= base_url('client/transactions'); ?>"><?= __('Biến động số dư'); ?></a>
-                                    </li>
-                                </ul>
-                            </li>
                             <li class="navbar-item"><a class="navbar-link"
                                     href="<?= base_url('client/learning'); ?>"><?= __('Khu vực học tập'); ?></a></li>
                             <?php if ($SMARTSTUDY->site('affiliate_status') == 1): ?>
@@ -633,16 +623,6 @@
                                         class="me-2" src="<?= base_url($payment_manual['icon']); ?>">
                                     <?= __($payment_manual['title']); ?></a></li>
                         <?php endforeach ?>
-                    </ul>
-                </li>
-                <li><a class="nav-link dropdown-link" href="#"><i
-                            class="fa-solid fa-clock-rotate-left"></i><?= __('Lịch sử'); ?></a>
-                    <ul class="dropdown-list">
-                        <li><a href="<?= base_url('product-orders/'); ?>"><?= __('Lịch sử đơn hàng'); ?></a>
-                        </li>
-                        <li><a href="<?= base_url('client/logs'); ?>"><?= __('Nhật ký hoạt động'); ?></a></li>
-                        <li><a href="<?= base_url('client/transactions'); ?>"><?= __('Biến động số dư'); ?></a>
-                        </li>
                     </ul>
                 </li>
                 <li><a class="nav-link" href="<?= base_url('client/learning'); ?>"><i

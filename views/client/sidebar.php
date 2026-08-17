@@ -13,6 +13,9 @@
 <a class="sidebar_profile <?= active_sidebar_client(['security']); ?>" href="<?= base_url('client/security'); ?>">
     <h6><i class="fa-solid fa-shield-halved"></i> <span><?= __('Bảo mật'); ?></span></h6>
 </a>
+<a class="sidebar_profile <?= active_sidebar_client(['product-orders', 'product-order']); ?>" href="<?= base_url('product-orders'); ?>">
+    <h6><i class="fa-solid fa-cart-shopping"></i> <span><?= __('Lịch sử đơn hàng'); ?></span></h6>
+</a>
 <a class="sidebar_profile <?= active_sidebar_client(['logs']); ?>" href="<?= base_url('?action=logs'); ?>">
     <h6><i class="fa fa-history" aria-hidden="true"></i> <span><?= __('Nhật ký hoạt động'); ?></span></h6>
 </a>
