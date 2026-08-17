@@ -101,6 +101,14 @@
                             <li class="navbar-item"><a class="navbar-link"
                                     href="<?= base_url(''); ?>"><?= __('Trang chủ'); ?></a>
                             </li>
+                            <li class="navbar-item"><a class="navbar-link"
+                                    href="<?= base_url('client/course-detail'); ?>"><?= __('Khoá học'); ?></a>
+                            </li>
+                            <?php if (isset($getUser)): ?>
+                            <li class="navbar-item"><a class="navbar-link"
+                                    href="<?= base_url('client/my-courses'); ?>"><?= __('Khoá học của tôi'); ?></a>
+                            </li>
+                            <?php endif ?>
                             <li class="navbar-item dropdown-megamenu"><a class="navbar-link dropdown-arrow"
                                     href="#"><?= __('Sản phẩm'); ?></a>
                                 <div class="megamenu">

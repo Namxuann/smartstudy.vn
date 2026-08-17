@@ -86,6 +86,11 @@ $admin_roles = [
         'view_suppliers'        => 'Xem nhà cung cấp API trong phần đơn hàng',
         'view_sold_product'     => 'Xem toàn bộ tài khoản đã bán'
     ],
+    'Course' => [
+        'view_course'           => 'Xem danh sách khoá học',
+        'edit_course'           => 'Thêm xóa sửa khoá học và nội dung',
+        'manage_students_course' => 'Quản lý học viên khoá học'
+    ],
     'CTV' => [
         'view_ctv'  => 'Xem danh sách CTV',
         'view_withdraw_ctv' => 'Xem lịch sử rút tiền CTV',

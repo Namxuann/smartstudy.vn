@@ -742,7 +742,29 @@ if (!defined('IN_SITE')) {
                             </li>
                         <?php endif ?>
 
-
+                        <?php if (checkPermission($getUser['admin'], 'view_course') == true): ?>
+                            <li
+                                class="slide has-sub <?= show_sidebar(['courses', 'course-builder', 'course-students']); ?>">
+                                <a href="javascript:void(0);"
+                                    class="side-menu__item <?= show_sidebar(['courses', 'course-builder', 'course-students']); ?>">
+                                    <i class='bx bxs-graduation side-menu__icon' style='color: #8b5cf6;'></i>
+                                    <span class="side-menu__label">Khoá học</span>
+                                    <i class="fe fe-chevron-right side-menu__angle"></i>
+                                </a>
+                                <ul class="slide-menu child1">
+                                    <li class="slide">
+                                        <a href="<?= base_url_admin('courses'); ?>"
+                                            class="side-menu__item <?= active_sidebar(['courses']); ?>">Tất cả khoá học</a>
+                                    </li>
+                                    <?php if (checkPermission($getUser['admin'], 'edit_course') == true): ?>
+                                        <li class="slide">
+                                            <a href="<?= base_url_admin('course-builder'); ?>"
+                                                class="side-menu__item <?= active_sidebar(['course-builder']); ?>">Tạo khoá học mới</a>
+                                        </li>
+                                    <?php endif ?>
+                                </ul>
+                            </li>
+                        <?php endif ?>
                         <li class="slide__category"><span class="category-name">Quản lý</span></li>
                         <?php if (checkPermission($getUser['admin'], 'view_ctv') == true): ?>
                             <li
