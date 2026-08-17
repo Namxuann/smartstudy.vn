@@ -61,7 +61,7 @@
                 <form class="header-form" method="GET" action="<?= base_url(); ?>">
                     <input type="hidden" name="action" value="home">
                     <input type="text" name="keyword" value="<?= isset($keyword) ? $keyword : ''; ?>"
-                        placeholder="<?= __('Tìm kiếm sản phẩm...'); ?>"><button><i class="fas fa-search"></i></button>
+                        placeholder="<?= __('Tìm kiếm...'); ?>"><button><i class="fas fa-search"></i></button>
                 </form>
                 <div class="header-widget-group">
                     <a href="<?= base_url('product-orders/'); ?>" class="header-widget" title="<?= __('Đơn hàng'); ?>"><i

@@ -176,6 +176,37 @@ if ($action == 'search' && !empty($keyword)) {
         </div>
     </div>
 <?php
+    // === Tìm kiếm blog (bài viết) ===
+    $blog_list = $SMARTSTUDY->get_list_safe("SELECT `id`, `title`, `slug`, `image`, `content`, `user_id`, `create_gettime` FROM `posts` WHERE `status` = ? AND `title` LIKE ? ORDER BY `id` DESC LIMIT 6", [1, '%'.$keyword.'%']);
+    if (!empty($blog_list)):
+    ?>
+    <div class="home-heading mb-3 mt-4">
+        <h3>
+            <i class="fa-solid fa-newspaper me-2"></i>
+            <?= __('Bài viết liên quan đến từ khóa'); ?> '<strong style="color:red;"><?= htmlspecialchars($keyword); ?></strong>'
+        </h3>
+    </div>
+    <div class="row">
+        <?php foreach ($blog_list as $row): ?>
+        <div class="col-md-6 col-lg-6">
+            <div class="blog-card">
+                <div class="blog-media"><a class="blog-img" href="<?= base_url('blog/' . $row['slug']); ?>"><img style="width: 100%; height: 300px;" src="<?= base_url($row['image']); ?>" alt="blog"></a></div>
+                <div class="blog-content">
+                    <ul class="blog-meta">
+                        <li><i class="fas fa-user"></i><span><?= getRowRealtime('users', $row['user_id'], 'fullname'); ?></span></li>
+                        <li><i class="fas fa-calendar-alt"></i><span><?= $row['create_gettime']; ?></span></li>
+                    </ul>
+                    <h4 class="blog-title"><a href="<?= base_url('blog/' . $row['slug']); ?>"><?= $row['title']; ?></a></h4>
+                    <p class="blog-desc"><?= strip_tags(substr(base64_decode($row['content']), 0, 200)) . ' ...'; ?></p>
+                    <a class="blog-btn" href="<?= base_url('blog/' . $row['slug']); ?>"><span><?= __('Xem thêm'); ?></span><i class="icofont-arrow-right"></i></a>
+                </div>
+            </div>
+        </div>
+        <?php endforeach; ?>
+    </div>
+    <center><a class="btn-more-new mb-3" href="<?= base_url('?action=blogs&keyword=' . urlencode($keyword)); ?>"><?= __('Xem tất cả bài viết'); ?></a></center>
+    <?php endif; ?>
+<?php
     exit;
 }
 
