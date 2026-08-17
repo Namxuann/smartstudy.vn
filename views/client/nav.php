@@ -102,7 +102,7 @@
                                     href="<?= base_url(''); ?>"><?= __('Trang chủ'); ?></a>
                             </li>
                             <li class="navbar-item"><a class="navbar-link"
-                                    href="<?= base_url('client/course-detail'); ?>"><?= __('Khoá học'); ?></a>
+                                    href="<?= base_url(''); ?>"><?= __('Khoá học'); ?></a>
                             </li>
                             <?php if (isset($getUser)): ?>
                             <li class="navbar-item"><a class="navbar-link"
@@ -288,8 +288,7 @@
                                     <?php endforeach ?>
                                 </ul>
                             </li>
-                            <li class="navbar-item"><a class="navbar-link"
-                                    href="<?= base_url('client/learning'); ?>"><?= __('Khu vực học tập'); ?></a></li>
+
                             <?php if ($SMARTSTUDY->site('affiliate_status') == 1): ?>
                                 <li class="navbar-item dropdown">
                                     <a class="navbar-link dropdown-arrow" href="#"><?= __('Affiliate Program'); ?></a>
@@ -633,8 +632,7 @@
                         <?php endforeach ?>
                     </ul>
                 </li>
-                <li><a class="nav-link" href="<?= base_url('client/learning'); ?>"><i
-                            class="fa-solid fa-graduation-cap"></i><?= __('Khu vực học tập'); ?></a></li>
+
                 <?php if ($SMARTSTUDY->site('affiliate_status') == 1): ?>
                     <li><a class="nav-link dropdown-link" href="#"><i
                                 class="fa-solid fa-money-bill-trend-up"></i><?= __('Affiliate Program'); ?></a>

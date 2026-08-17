@@ -27,14 +27,13 @@ class LearningApp {
         try {
             const response = await $.ajax({
                 url: baseUrl + 'ajaxs/client/learning.php',
-                type: 'POST',
+                type: 'GET',
                 data: { action: 'getCurriculum', course_id: this.courseId },
                 dataType: 'json'
             });
 
             if (response.status === 'success') {
-                this.curriculum = response.data.modules;
-                this.updateProgress(response.data.progress);
+                this.curriculum = response.data;
                 this.renderCurriculum();
                 this.buildFlatList();
             } else {
@@ -47,9 +46,9 @@ class LearningApp {
 
     buildFlatList() {
         this.lessonsFlat = [];
-        this.curriculum.forEach(module => {
-            if (module.lessons) {
-                module.lessons.forEach(lesson => {
+        this.curriculum.forEach(section => {
+            if (section.lessons) {
+                section.lessons.forEach(lesson => {
                     this.lessonsFlat.push(lesson);
                 });
             }
@@ -60,26 +59,26 @@ class LearningApp {
         const container = $('#curriculumList');
         container.empty();
 
-        this.curriculum.forEach((module, index) => {
+        this.curriculum.forEach((section, index) => {
             let lessonsHtml = '';
             
-            if (module.lessons) {
-                module.lessons.forEach(lesson => {
+            if (section.lessons) {
+                section.lessons.forEach(lesson => {
                     let icon = 'fa-file-alt';
-                    if (lesson.type === 'video') icon = 'fa-play-circle';
-                    else if (lesson.type === 'quiz') icon = 'fa-question-circle';
+                    if (lesson.lesson_type === 'video') icon = 'fa-play-circle';
+                    else if (lesson.lesson_type === 'quiz') icon = 'fa-question-circle';
                     
-                    if (lesson.completed) icon = 'fa-check-circle';
+                    if (lesson.is_completed) icon = 'fa-check-circle';
 
                     lessonsHtml += `
-                        <a href="javascript:void(0)" class="lesson-item ${lesson.completed ? 'completed' : ''}" 
+                        <a href="javascript:void(0)" class="lesson-item ${lesson.is_completed ? 'completed' : ''}" 
                            data-id="${lesson.id}" onclick="app.loadLesson(${lesson.id})">
                             <div class="lesson-icon">
                                 <i class="fas ${icon}"></i>
                             </div>
                             <div class="lesson-details">
                                 <div class="lesson-title">${lesson.title}</div>
-                                <div class="lesson-meta">${lesson.duration || ''}</div>
+                                <div class="lesson-meta">${lesson.media_duration ? Math.floor(lesson.media_duration / 60) + ' phút' : ''}</div>
                             </div>
                         </a>
                     `;
@@ -88,15 +87,15 @@ class LearningApp {
 
             const html = `
                 <div class="accordion-item border-0 border-bottom">
-                    <h2 class="accordion-header" id="heading-${module.id}">
+                    <h2 class="accordion-header" id="heading-${section.id}">
                         <button class="accordion-button ${index === 0 ? '' : 'collapsed'} py-3" type="button" 
-                                data-bs-toggle="collapse" data-bs-target="#collapse-${module.id}">
+                                data-bs-toggle="collapse" data-bs-target="#collapse-${section.id}">
                             <div class="fw-bold">
-                                <div>Chương ${index + 1}: ${module.title}</div>
+                                <div>Chương ${index + 1}: ${section.title}</div>
                             </div>
                         </button>
                     </h2>
-                    <div id="collapse-${module.id}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
+                    <div id="collapse-${section.id}" class="accordion-collapse collapse ${index === 0 ? 'show' : ''}" 
                          data-bs-parent="#curriculumList">
                         <div class="accordion-body p-0">
                             ${lessonsHtml}
@@ -116,10 +115,10 @@ class LearningApp {
         $('.lesson-item').removeClass('active');
         $(`.lesson-item[data-id="${lessonId}"]`).addClass('active');
         
-        // Expand module containing lesson
-        const moduleCollapse = $(`.lesson-item[data-id="${lessonId}"]`).closest('.accordion-collapse');
-        if (moduleCollapse.length && !moduleCollapse.hasClass('show')) {
-            moduleCollapse.collapse('show');
+        // Expand section containing lesson
+        const sectionCollapse = $(`.lesson-item[data-id="${lessonId}"]`).closest('.accordion-collapse');
+        if (sectionCollapse.length && !sectionCollapse.hasClass('show')) {
+            sectionCollapse.collapse('show');
         }
 
         // Close sidebar on mobile
@@ -149,21 +148,18 @@ class LearningApp {
         try {
             const response = await $.ajax({
                 url: baseUrl + 'ajaxs/client/learning.php',
-                type: 'POST',
-                data: { action: 'getLesson', lesson_id: lessonId, course_id: this.courseId },
+                type: 'GET',
+                data: { action: 'getLessonContent', lesson_id: lessonId },
                 dataType: 'json'
             });
 
             if (response.status === 'success') {
-                const lesson = response.data.lesson;
+                const lesson = response.data;
                 this.renderLessonContent(lesson);
                 this.updateNavButtons();
                 
-                if (lesson.completed) {
-                    this.setCompleteButtonState(true);
-                } else {
-                    this.setCompleteButtonState(false);
-                }
+                const isCompleted = lesson.progress && lesson.progress.status === 'completed';
+                this.setCompleteButtonState(isCompleted);
             } else {
                 $('#lessonContent').html(`<div class="alert alert-danger">${response.message}</div>`);
             }
@@ -179,8 +175,8 @@ class LearningApp {
         if (lesson.type === 'video') {
             html += `
                 <div class="video-container mb-4">
-                    <video id="player" playsinline controls data-poster="${lesson.thumbnail || ''}">
-                        <source src="${lesson.video_url}" type="video/mp4" />
+                    <video id="player" playsinline controls>
+                        <source src="${lesson.media_url}" type="video/mp4" />
                     </video>
                 </div>
             `;
@@ -188,9 +184,9 @@ class LearningApp {
             $('#lessonContent').html(html);
 
             this.player = new Plyr('#player');
-            if (lesson.last_position) {
+            if (lesson.progress && lesson.progress.last_position) {
                 this.player.once('canplay', () => {
-                    this.player.currentTime = parseFloat(lesson.last_position);
+                    this.player.currentTime = parseFloat(lesson.progress.last_position);
                 });
             }
 
@@ -230,14 +226,14 @@ class LearningApp {
                 
                 // Update flat list
                 const lessonObj = this.lessonsFlat.find(l => l.id == this.currentLessonId);
-                if (lessonObj) lessonObj.completed = true;
+                if (lessonObj) lessonObj.is_completed = true;
 
                 // Update UI checkmark
                 const icon = $(`.lesson-item[data-id="${this.currentLessonId}"] .lesson-icon i`);
                 icon.removeClass('fa-play-circle fa-file-alt fa-question-circle').addClass('fa-check-circle text-success');
                 $(`.lesson-item[data-id="${this.currentLessonId}"]`).addClass('completed');
 
-                this.updateProgress(response.data.progress);
+                this.updateProgress(response.progress);
 
                 if (navNext) {
                     this.nextLesson();
@@ -252,7 +248,7 @@ class LearningApp {
         $.ajax({
             url: baseUrl + 'ajaxs/client/learning.php',
             type: 'POST',
-            data: { action: 'saveVideoProgress', lesson_id: this.currentLessonId, time: time },
+            data: { action: 'saveProgress', lesson_id: this.currentLessonId, position: Math.floor(time) },
             dataType: 'json'
         });
     }

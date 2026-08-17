@@ -11,6 +11,11 @@ $body['footer'] = '';
 $body['noindex'] = true;
 
 require_once(__DIR__ . '/../../models/is_user.php');
+require_once(__DIR__ . '/../../libs/database/courses.php');
+require_once(__DIR__ . '/../../libs/database/enrollments.php');
+
+$coursesDB = new Courses();
+$enrollmentsDB = new Enrollments();
 
 require_once(__DIR__ . '/header.php');
 require_once(__DIR__ . '/nav.php');
@@ -28,39 +33,35 @@ require_once(__DIR__ . '/nav.php');
         </div>
         <div class="row">
             <?php 
-            $enrollments = $SMARTSTUDY->get_list("SELECT * FROM `enrollments` WHERE `user_id` = ? ORDER BY `id` DESC", [$getUser['id']]);
+            $enrollments = $enrollmentsDB->getUserEnrollments($getUser['id']);
             if(count($enrollments) > 0) {
                 foreach($enrollments as $enroll) {
-                    $course = $SMARTSTUDY->get_row_safe("SELECT * FROM `products` WHERE `id` = ?", [$enroll['course_id']]);
-                    if($course) {
-                        $progress = $enroll['progress'] ?? 0;
+                    $progress = $enrollmentsDB->getCourseProgress($getUser['id'], $enroll['course_id']);
             ?>
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="product-card">
                     <div class="product-media">
-                        <a href="<?=base_url('client/learning?course_id='.$course['id']);?>">
-                            <?php $image = explode(PHP_EOL, $course['images'])[0] ?? ''; ?>
-                            <img src="<?=base_url(dirImageProduct($image));?>" alt="course">
+                        <a href="<?=base_url('client/learning?course_id='.$enroll['course_id']);?>">
+                            <img src="<?=base_url($enroll['featured_image'] ? $enroll['featured_image'] : 'mod/img/placeholder-course.png');?>" alt="course">
                         </a>
                     </div>
                     <div class="product-content">
                         <h6 class="product-name">
-                            <a href="<?=base_url('client/learning?course_id='.$course['id']);?>"><?=__($course['name']);?></a>
+                            <a href="<?=base_url('client/learning?course_id='.$enroll['course_id']);?>"><?=__($enroll['title']);?></a>
                         </h6>
                         <div class="progress" style="height: 10px; margin: 10px 0;">
                             <div class="progress-bar bg-success" role="progressbar" style="width: <?=$progress;?>%;" aria-valuenow="<?=$progress;?>" aria-valuemin="0" aria-valuemax="100"></div>
                         </div>
                         <p class="text-muted"><small>Hoàn thành: <?=$progress;?>%</small></p>
                         <div class="product-action">
-                            <a href="<?=base_url('client/learning?course_id='.$course['id']);?>" class="btn btn-primary w-100">
-                                <?=$progress == 100 ? 'Học lại' : 'Tiếp tục học';?>
+                            <a href="<?=base_url('client/learning?course_id='.$enroll['course_id']);?>" class="btn btn-primary w-100">
+                                <?=$progress >= 100 ? 'Học lại' : 'Tiếp tục học';?>
                             </a>
                         </div>
                     </div>
                 </div>
             </div>
             <?php 
-                    }
                 }
             } else { 
             ?>

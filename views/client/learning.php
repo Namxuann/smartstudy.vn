@@ -2,23 +2,37 @@
     die('The Request Not Found');
 }
 require_once(__DIR__ . '/../../models/is_user.php');
+require_once(__DIR__ . '/../../libs/database/courses.php');
+require_once(__DIR__ . '/../../libs/database/enrollments.php');
+
+$coursesDB = new Courses();
+$enrollmentsDB = new Enrollments();
 
 $course_id = isset($_GET['course_id']) ? intval($_GET['course_id']) : 0;
 if (!$course_id) redirect(base_url('client/my-courses'));
 
-// Check enrollment
-$enrollment = $SMARTSTUDY->get_row_safe("SELECT * FROM `enrollments` WHERE `user_id` = ? AND `course_id` = ?", [$getUser['id'], $course_id]);
-if (!$enrollment) {
-    $course = $SMARTSTUDY->get_row_safe("SELECT slug FROM `products` WHERE `id` = ?", [$course_id]);
-    if ($course) redirect(base_url('course/'.$course['slug']));
-    else redirect(base_url());
+// Check enrollment using native course_enrollments table
+if (!$enrollmentsDB->isEnrolled($getUser['id'], $course_id)) {
+    // Not enrolled - try to redirect to course detail page
+    $course = $coursesDB->select_by_id($course_id);
+    if ($course && $course['product_id']) {
+        $product = $SMARTSTUDY->get_row_safe("SELECT slug FROM `products` WHERE `id` = ?", [$course['product_id']]);
+        if ($product) redirect(base_url('course/'.$product['slug']));
+    }
+    redirect(base_url('client/my-courses'));
 }
 
-$course = $SMARTSTUDY->get_row_safe("SELECT * FROM `products` WHERE `id` = ?", [$course_id]);
+// Get course info from native courses table
+$course = $coursesDB->select_by_id($course_id);
+if (!$course) redirect(base_url('client/my-courses'));
+
 $initialLessonId = isset($_GET['lesson_id']) ? intval($_GET['lesson_id']) : 0;
 
+// Calculate progress dynamically
+$progressPercent = $enrollmentsDB->getCourseProgress($getUser['id'], $course_id);
+
 $body = [
-    'title' => __($course['name']).' | Learning',
+    'title' => __($course['title']).' | Learning',
     'noindex' => true
 ];
 ?>
@@ -45,13 +59,13 @@ $body = [
             <a href="<?=base_url('client/my-courses');?>" class="back-btn text-decoration-none text-dark me-4">
                 <i class="fas fa-arrow-left me-1"></i> Quay lại
             </a>
-            <h5 class="course-title m-0 text-truncate d-none d-md-block" style="max-width: 400px;"><?=__($course['name']);?></h5>
+            <h5 class="course-title m-0 text-truncate d-none d-md-block" style="max-width: 400px;"><?=__($course['title']);?></h5>
             
             <div class="progress-indicator ms-auto d-flex align-items-center">
                 <div class="progress" style="width: 150px; height: 10px; margin-right: 10px;">
-                    <div class="progress-bar bg-success" id="courseProgressBar" role="progressbar" style="width: <?=$enrollment['progress'];?>%"></div>
+                    <div class="progress-bar bg-success" id="courseProgressBar" role="progressbar" style="width: <?=$progressPercent;?>%"></div>
                 </div>
-                <span class="progress-text fw-bold" id="courseProgressText"><?=$enrollment['progress'];?>%</span>
+                <span class="progress-text fw-bold" id="courseProgressText"><?=$progressPercent;?>%</span>
             </div>
         </div>
     </div>

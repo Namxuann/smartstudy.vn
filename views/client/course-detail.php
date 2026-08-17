@@ -7,15 +7,23 @@ if (isset($_GET['slug'])) {
     if ($slug === false) {
         redirect(base_url());
     }
-    if (!$course = $SMARTSTUDY->get_row_safe("SELECT * FROM `products` WHERE `slug` = ? AND `status` = 1 AND `product_type` = 'course'", [$slug])) {
+    if (!$product = $SMARTSTUDY->get_row_safe("SELECT * FROM `products` WHERE `slug` = ? AND `status` = 1 AND `product_type` = 'course'", [$slug])) {
         redirect(base_url());
     }
 } else {
     redirect(base_url());
 }
 
+// Load course data from native courses table via product_id
+require_once(__DIR__ . '/../../libs/database/courses.php');
+require_once(__DIR__ . '/../../libs/database/enrollments.php');
+$coursesDB = new Courses();
+$enrollmentsDB = new Enrollments();
+
+$courseData = $coursesDB->getCourseByProductId($product['id']);
+
 $body = [
-    'title' => __($course['name']).' | '.$SMARTSTUDY->site('title'),
+    'title' => __($product['name']).' | '.$SMARTSTUDY->site('title'),
     'desc'   => $SMARTSTUDY->site('description'),
     'keyword' => $SMARTSTUDY->site('keywords')
 ];
@@ -26,9 +34,8 @@ require_once(__DIR__.'/header.php');
 require_once(__DIR__.'/nav.php');
 
 $isEnrolled = false;
-if(isset($getUser)) {
-    $enroll = $SMARTSTUDY->get_row_safe("SELECT * FROM `enrollments` WHERE `user_id` = ? AND `course_id` = ?", [$getUser['id'], $course['id']]);
-    if($enroll) $isEnrolled = true;
+if(isset($getUser) && $courseData) {
+    $isEnrolled = $enrollmentsDB->isEnrolled($getUser['id'], $courseData['id']);
 }
 ?>
 
@@ -36,27 +43,27 @@ if(isset($getUser)) {
     <div class="container">
         <div class="row align-items-center">
             <div class="col-lg-7">
-                <h1 class="mb-3"><?=__($course['name']);?></h1>
-                <p class="lead text-muted mb-4"><?=str_replace(PHP_EOL, '<br>', $course['short_desc']);?></p>
+                <h1 class="mb-3"><?=__($product['name']);?></h1>
+                <p class="lead text-muted mb-4"><?=str_replace(PHP_EOL, '<br>', $product['short_desc']);?></p>
                 <div class="d-flex align-items-center mb-4">
                     <span class="badge bg-primary me-3">Online</span>
-                    <span class="text-muted"><i class="fa fa-users me-1"></i> <?=$course['sold'];?> Học viên</span>
+                    <span class="text-muted"><i class="fa fa-users me-1"></i> <?=$product['sold'];?> Học viên</span>
                 </div>
             </div>
             <div class="col-lg-5">
                 <div class="card shadow-sm border-0">
-                    <?php $image = explode(PHP_EOL, $course['images'])[0] ?? ''; ?>
+                    <?php $image = explode(PHP_EOL, $product['images'])[0] ?? ''; ?>
                     <img src="<?=base_url(dirImageProduct($image));?>" class="card-img-top" alt="Course Image">
                     <div class="card-body p-4 text-center">
                         <h3 class="mb-4">
-                            <?=$course['discount'] > 0 ? '<del class="text-muted fs-5">'.format_currency($course['price']).'</del> ' : '';?>
-                            <span class="text-primary fw-bold"><?=format_currency($course['price'] - ($course['price'] * $course['discount'] / 100));?></span>
+                            <?=$product['discount'] > 0 ? '<del class="text-muted fs-5">'.format_currency($product['price']).'</del> ' : '';?>
+                            <span class="text-primary fw-bold"><?=format_currency($product['price'] - ($product['price'] * $product['discount'] / 100));?></span>
                         </h3>
                         
-                        <?php if($isEnrolled): ?>
-                            <a href="<?=base_url('client/learning?course_id='.$course['id']);?>" class="btn btn-success btn-lg w-100 rounded-pill">Vào học ngay</a>
+                        <?php if($isEnrolled && $courseData): ?>
+                            <a href="<?=base_url('client/learning?course_id='.$courseData['id']);?>" class="btn btn-success btn-lg w-100 rounded-pill">Vào học ngay</a>
                         <?php else: ?>
-                            <button id="openModal_<?=$course['id'];?>" onclick="openModal(`<?=isset($getUser) ? $getUser['token'] : NULL;?>`, `<?=$course['id'];?>`, `<?=$course['preview_uid'] ?? 0;?>`)" class="btn btn-primary btn-lg w-100 rounded-pill"><i class="fa-solid fa-cart-shopping"></i> Mua ngay</button>
+                            <button id="openModal_<?=$product['id'];?>" onclick="openModal(`<?=isset($getUser) ? $getUser['token'] : NULL;?>`, `<?=$product['id'];?>`, `<?=$product['preview_uid'] ?? 0;?>`)" class="btn btn-primary btn-lg w-100 rounded-pill"><i class="fa-solid fa-cart-shopping"></i> Mua ngay</button>
                         <?php endif; ?>
                     </div>
                 </div>
@@ -71,24 +78,25 @@ if(isset($getUser)) {
             <div class="col-lg-8">
                 <h3 class="mb-4">Mô tả khoá học</h3>
                 <div class="content-html mb-5">
-                    <?=base64_decode($course['description']);?>
+                    <?=base64_decode($product['description']);?>
                 </div>
 
                 <h3 class="mb-4">Chương trình học</h3>
                 <div class="accordion" id="curriculumAccordion">
                     <?php
-                    $modules = $SMARTSTUDY->get_list("SELECT * FROM `course_modules` WHERE `course_id` = ? ORDER BY `sort_order` ASC", [$course['id']]);
-                    foreach($modules as $index => $module) {
-                        $lessons = $SMARTSTUDY->get_list("SELECT * FROM `course_lessons` WHERE `module_id` = ? ORDER BY `sort_order` ASC", [$module['id']]);
+                    if ($courseData) {
+                        $sections = $coursesDB->getSections($courseData['id']);
+                        foreach($sections as $index => $section) {
+                            $lessons = $coursesDB->getLessons($section['id']);
                     ?>
                     <div class="accordion-item mb-3 border">
-                        <h2 class="accordion-header" id="heading<?=$module['id'];?>">
-                            <button class="accordion-button <?= $index == 0 ? '' : 'collapsed'; ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?=$module['id'];?>" aria-expanded="<?= $index == 0 ? 'true' : 'false'; ?>" aria-controls="collapse<?=$module['id'];?>">
-                                <strong class="me-2">Chương <?=$index+1;?>:</strong> <?=__($module['title']);?>
+                        <h2 class="accordion-header" id="heading<?=$section['id'];?>">
+                            <button class="accordion-button <?= $index == 0 ? '' : 'collapsed'; ?>" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?=$section['id'];?>" aria-expanded="<?= $index == 0 ? 'true' : 'false'; ?>" aria-controls="collapse<?=$section['id'];?>">
+                                <strong class="me-2">Chương <?=$index+1;?>:</strong> <?=__($section['title']);?>
                                 <span class="ms-auto badge bg-light text-dark rounded-pill"><?=count($lessons);?> bài học</span>
                             </button>
                         </h2>
-                        <div id="collapse<?=$module['id'];?>" class="accordion-collapse collapse <?= $index == 0 ? 'show' : ''; ?>" aria-labelledby="heading<?=$module['id'];?>">
+                        <div id="collapse<?=$section['id'];?>" class="accordion-collapse collapse <?= $index == 0 ? 'show' : ''; ?>" aria-labelledby="heading<?=$section['id'];?>">
                             <div class="accordion-body p-0">
                                 <ul class="list-group list-group-flush">
                                     <?php foreach($lessons as $lesson): ?>
@@ -108,6 +116,13 @@ if(isset($getUser)) {
                                 </ul>
                             </div>
                         </div>
+                    </div>
+                    <?php 
+                        }
+                    } else {
+                    ?>
+                    <div class="text-center text-muted py-4">
+                        <p>Chương trình học đang được cập nhật...</p>
                     </div>
                     <?php } ?>
                 </div>
