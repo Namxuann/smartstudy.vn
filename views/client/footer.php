@@ -591,7 +591,9 @@
                             <li><a href="<?= base_url('client/policy'); ?>"><?= __('Chính sách'); ?></a></li>
                             <li><a href="<?= base_url('client/faq'); ?>"><?= __('Câu hỏi thường gặp'); ?></a></li>
                             <li><a href="<?= base_url('client/contact'); ?>"><?= __('Liên hệ chúng tôi'); ?></a></li>
+                            <?php if ($SMARTSTUDY->site('api_status') == 1): ?>
                             <li><a href="<?= base_url('client/document-api'); ?>"><?= __('Tài liệu API'); ?></a></li>
+                            <?php endif ?>
                         </ul>
                     </div>
                 </div>
