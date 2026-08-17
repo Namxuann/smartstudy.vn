@@ -762,6 +762,10 @@ if (!defined('IN_SITE')) {
                                                 class="side-menu__item <?= active_sidebar(['course-builder']); ?>">Tạo khoá học mới</a>
                                         </li>
                                     <?php endif ?>
+                                    <li class="slide">
+                                        <a href="<?= base_url_admin('course-students'); ?>"
+                                            class="side-menu__item <?= active_sidebar(['course-students']); ?>">Quản lý học viên</a>
+                                    </li>
                                 </ul>
                             </li>
                         <?php endif ?>

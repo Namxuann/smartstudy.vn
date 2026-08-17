@@ -318,6 +318,78 @@ switch ($action) {
         }
         break;
 
+    case 'listAllStudents':
+        $search = isset($_GET['search']) ? check_string($_GET['search']) : '';
+        $course_id = isset($_GET['course_id']) ? validate_int($_GET['course_id']) : 0;
+        $status = isset($_GET['status']) ? check_string($_GET['status']) : '';
+        $sort = isset($_GET['sort']) ? check_string($_GET['sort']) : 'newest';
+        $limit = isset($_GET['limit']) ? validate_int($_GET['limit']) : 20;
+        $offset = isset($_GET['offset']) ? validate_int($_GET['offset']) : 0;
+
+        $where = [];
+        $params = [];
+
+        if (!empty($search)) {
+            $where[] = "(u.username LIKE ? OR u.email LIKE ? OR u.fullname LIKE ?)";
+            $searchTerm = '%' . $search . '%';
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+            $params[] = $searchTerm;
+        }
+        if ($course_id > 0) {
+            $where[] = "e.course_id = ?";
+            $params[] = (int)$course_id;
+        }
+        if (!empty($status)) {
+            if ($status === 'completed') {
+                $where[] = "e.completed_at IS NOT NULL";
+            } else {
+                $where[] = "e.status = ?";
+                $params[] = $status;
+            }
+        }
+
+        $whereSql = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+        $orderSql = ($sort === 'oldest') ? 'ORDER BY e.enrolled_at ASC' : 'ORDER BY e.enrolled_at DESC';
+
+        // Count total
+        $countSql = "SELECT COUNT(*) as total FROM course_enrollments e JOIN users u ON e.user_id = u.id JOIN courses c ON e.course_id = c.id $whereSql";
+        $countRow = $SMARTSTUDY->get_row_safe($countSql, $params);
+        $total = $countRow ? (int)$countRow['total'] : 0;
+
+        // Get data
+        $dataSql = "SELECT e.*, u.username, u.email, u.fullname, c.title as course_title 
+                    FROM course_enrollments e 
+                    JOIN users u ON e.user_id = u.id 
+                    JOIN courses c ON e.course_id = c.id 
+                    $whereSql $orderSql LIMIT ? OFFSET ?";
+        $dataParams = array_merge($params, [(int)$limit, (int)$offset]);
+        $students = $SMARTSTUDY->get_list_safe($dataSql, $dataParams);
+
+        // Calculate progress for each student
+        if (!empty($students)) {
+            foreach ($students as &$student) {
+                $student['progress'] = $enrollmentsDB->getCourseProgress($student['user_id'], $student['course_id']);
+            }
+            unset($student);
+        }
+
+        echo json_encode(['status' => 'success', 'data' => $students, 'total' => $total]);
+        break;
+
+    case 'enrollmentStats':
+        $total = $SMARTSTUDY->num_rows_safe("SELECT id FROM course_enrollments", []);
+        $active = $SMARTSTUDY->num_rows_safe("SELECT id FROM course_enrollments WHERE status = 'active' AND completed_at IS NULL", []);
+        $completed = $SMARTSTUDY->num_rows_safe("SELECT id FROM course_enrollments WHERE completed_at IS NOT NULL", []);
+        $cancelled = $SMARTSTUDY->num_rows_safe("SELECT id FROM course_enrollments WHERE status = 'cancelled'", []);
+        echo json_encode(['status' => 'success', 'data' => [
+            'total' => $total,
+            'active' => $active,
+            'completed' => $completed,
+            'cancelled' => $cancelled
+        ]]);
+        break;
+
     default:
         echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
         break;
