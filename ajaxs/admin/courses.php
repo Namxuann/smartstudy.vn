@@ -390,6 +390,35 @@ switch ($action) {
         ]]);
         break;
 
+    case 'searchProducts':
+        $q = isset($_GET['q']) ? check_string($_GET['q']) : '';
+        $page = isset($_GET['page']) ? max(1, validate_int($_GET['page'])) : 1;
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+
+        $params = [];
+        $whereSql = '';
+        if (!empty($q)) {
+            $whereSql = 'WHERE (name LIKE ? OR id = ?)';
+            $params[] = '%' . $q . '%';
+            $params[] = (int)$q;
+        }
+
+        $countSql = "SELECT COUNT(*) as total FROM products $whereSql";
+        $countRow = $SMARTSTUDY->get_row_safe($countSql, $params);
+        $total = $countRow ? (int)$countRow['total'] : 0;
+
+        $dataSql = "SELECT id, name FROM products $whereSql ORDER BY id DESC LIMIT ? OFFSET ?";
+        $dataParams = array_merge($params, [(int)$perPage, (int)$offset]);
+        $products = $SMARTSTUDY->get_list_safe($dataSql, $dataParams);
+
+        echo json_encode([
+            'status' => 'success',
+            'data' => $products ?: [],
+            'has_more' => ($offset + $perPage) < $total
+        ]);
+        break;
+
     default:
         echo json_encode(['status' => 'error', 'message' => 'Invalid action']);
         break;

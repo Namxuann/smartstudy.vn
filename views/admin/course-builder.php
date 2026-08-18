@@ -52,10 +52,10 @@ if ($mode == 'edit') {
                         <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">Thông tin khoá học</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="false">Nội dung khoá học</button>
+                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Nội dung khoá học</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false">Học viên</button>
+                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Học viên</button>
                     </li>
                 </ul>
                 <div class="tab-content" id="courseBuilderTabsContent">
