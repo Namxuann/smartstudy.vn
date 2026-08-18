@@ -33,9 +33,21 @@ class Enrollments extends DB {
     }
     
     public function enrollUser($user_id, $course_id, $order_id = null) {
-        if ($this->isEnrolled($user_id, $course_id)) {
+        $existingEnrollment = $this->getEnrollment($user_id, $course_id);
+        if ($existingEnrollment && $existingEnrollment['status'] === 'active') {
             return false;
         }
+
+        if ($existingEnrollment) {
+            return $this->update($this->_table_name, [
+                'order_id' => $order_id,
+                'status' => 'active',
+                'enrolled_at' => date('Y-m-d H:i:s'),
+                'expires_at' => null,
+                'completed_at' => null
+            ], 'id = ?', [(int) $existingEnrollment['id']]);
+        }
+
         return $this->insert($this->_table_name, [
             'user_id' => (int)$user_id,
             'course_id' => (int)$course_id,

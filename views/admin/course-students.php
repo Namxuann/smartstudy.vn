@@ -10,11 +10,14 @@ $body['header'] = '';
 $body['footer'] = '';
 
 require_once(__DIR__ . '/../../models/is_admin.php');
+
+$canManageStudents = checkPermission($getUser['admin'], 'manage_students_course');
+
 require_once(__DIR__ . '/header.php');
 require_once(__DIR__ . '/sidebar.php');
 
 // Permission check
-if (checkPermission($getUser['admin'], 'view_course') != true) {
+if (!$canManageStudents) {
     die('<script type="text/javascript">if(!alert("Bạn không có quyền sử dụng tính năng này")){window.history.back();}</script>');
 }
 
@@ -22,6 +25,7 @@ if (checkPermission($getUser['admin'], 'view_course') != true) {
 require_once(__DIR__ . '/../../libs/database/courses.php');
 $coursesDB = new Courses();
 $allCourses = $SMARTSTUDY->get_list_safe("SELECT id, title FROM courses ORDER BY title ASC", []);
+$selectedCourseId = isset($_GET['course_id']) ? intval($_GET['course_id']) : 0;
 ?>
 
 <div class="main-content app-content">
@@ -31,7 +35,9 @@ $allCourses = $SMARTSTUDY->get_list_safe("SELECT id, title FROM courses ORDER BY
             <h1 class="page-title fw-semibold fs-18 mb-0"><i class="fa-solid fa-users"></i> Quản lý Học viên Khoá học</h1>
             <div class="d-flex">
                 <a href="<?= base_url_admin('courses') ?>" class="btn btn-sm btn-secondary btn-wave me-2"><i class="fa-solid fa-arrow-left"></i> Quản lý khoá học</a>
-                <button type="button" class="btn btn-sm btn-primary btn-wave" data-bs-toggle="modal" data-bs-target="#modalManualEnroll"><i class="fa-solid fa-user-plus"></i> Thêm học viên</button>
+                <?php if ($canManageStudents): ?>
+                    <button type="button" class="btn btn-sm btn-primary btn-wave" data-bs-toggle="modal" data-bs-target="#modalManualEnroll"><i class="fa-solid fa-user-plus"></i> Thêm học viên</button>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -120,7 +126,7 @@ $allCourses = $SMARTSTUDY->get_list_safe("SELECT id, title FROM courses ORDER BY
                                 <option value="">Tất cả khoá học</option>
                                 <?php if (!empty($allCourses)): ?>
                                     <?php foreach ($allCourses as $c): ?>
-                                        <option value="<?= $c['id'] ?>"><?= check_string($c['title']) ?></option>
+                                        <option value="<?= $c['id'] ?>" <?= (int)$c['id'] === $selectedCourseId ? 'selected' : '' ?>><?= check_string($c['title']) ?></option>
                                     <?php endforeach; ?>
                                 <?php endif; ?>
                             </select>
@@ -164,12 +170,14 @@ $allCourses = $SMARTSTUDY->get_list_safe("SELECT id, title FROM courses ORDER BY
                                 <th>Tiến độ</th>
                                 <th>Ngày đăng ký</th>
                                 <th>Hoàn thành</th>
-                                <th>Thao tác</th>
+                                <?php if ($canManageStudents): ?>
+                                    <th>Thao tác</th>
+                                <?php endif; ?>
                             </tr>
                         </thead>
                         <tbody id="students-list">
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-4">
+                                <td colspan="<?= $canManageStudents ? 9 : 8 ?>" class="text-center text-muted py-4">
                                     <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
                                     Đang tải dữ liệu...
                                 </td>
@@ -186,42 +194,46 @@ $allCourses = $SMARTSTUDY->get_list_safe("SELECT id, title FROM courses ORDER BY
     </div>
 </div>
 
-<!-- Modal: Manual Enroll -->
-<div class="modal fade" id="modalManualEnroll" tabindex="-1" aria-labelledby="modalManualEnrollLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h6 class="modal-title" id="modalManualEnrollLabel"><i class="fa-solid fa-user-plus"></i> Thêm học viên vào khoá học</h6>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">User ID <span class="text-danger">*</span></label>
-                    <input type="number" class="form-control" id="enroll-user-id" placeholder="Nhập User ID...">
-                    <small class="text-muted">Nhập ID của người dùng muốn thêm vào khoá học</small>
+<?php if ($canManageStudents): ?>
+    <!-- Modal: Manual Enroll -->
+    <div class="modal fade" id="modalManualEnroll" tabindex="-1" aria-labelledby="modalManualEnrollLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title" id="modalManualEnrollLabel"><i class="fa-solid fa-user-plus"></i> Thêm học viên vào khoá học</h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label">Khoá học <span class="text-danger">*</span></label>
-                    <select class="form-select" id="enroll-course-id">
-                        <option value="">-- Chọn khoá học --</option>
-                        <?php if (!empty($allCourses)): ?>
-                            <?php foreach ($allCourses as $c): ?>
-                                <option value="<?= $c['id'] ?>"><?= check_string($c['title']) ?></option>
-                            <?php endforeach; ?>
-                        <?php endif; ?>
-                    </select>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">User ID <span class="text-danger">*</span></label>
+                        <input type="number" class="form-control" id="enroll-user-id" placeholder="Nhập User ID...">
+                        <small class="text-muted">Nhập ID của người dùng muốn thêm vào khoá học</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Khoá học <span class="text-danger">*</span></label>
+                        <select class="form-select" id="enroll-course-id">
+                            <option value="">-- Chọn khoá học --</option>
+                            <?php if (!empty($allCourses)): ?>
+                                <?php foreach ($allCourses as $c): ?>
+                                    <option value="<?= $c['id'] ?>" <?= (int)$c['id'] === $selectedCourseId ? 'selected' : '' ?>><?= check_string($c['title']) ?></option>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-primary" id="btn-manual-enroll"><i class="fa-solid fa-check"></i> Xác nhận thêm</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary" id="btn-manual-enroll"><i class="fa-solid fa-check"></i> Xác nhận thêm</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
 <script>
 const baseUrl = '<?= base_url() ?>';
+const canManageStudents = <?= $canManageStudents ? 'true' : 'false' ?>;
+const studentTableColumnCount = canManageStudents ? 9 : 8;
 let currentPage = 1;
 const perPage = 20;
 
@@ -244,6 +256,10 @@ $(document).ready(function() {
         currentPage = parseInt(page);
         loadStudents(currentPage);
     });
+
+    if (!canManageStudents) {
+        return;
+    }
 
     // Manual enroll
     $('#btn-manual-enroll').on('click', function() {
@@ -321,7 +337,7 @@ function loadStudents(page) {
     let sort = $('select[name="sort"]').val();
     let offset = (page - 1) * perPage;
 
-    $('#students-list').html('<tr><td colspan="9" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Đang tải dữ liệu...</td></tr>');
+    $('#students-list').html('<tr><td colspan="' + studentTableColumnCount + '" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div> Đang tải dữ liệu...</td></tr>');
 
     $.ajax({
         url: baseUrl + 'ajaxs/admin/courses.php',
@@ -340,18 +356,18 @@ function loadStudents(page) {
             if (response.status === 'success') {
                 renderStudents(response.data, response.total, page);
             } else {
-                $('#students-list').html('<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa-solid fa-circle-exclamation me-1"></i> ' + (response.message || 'Không thể tải dữ liệu') + '</td></tr>');
+                $('#students-list').html('<tr><td colspan="' + studentTableColumnCount + '" class="text-center text-muted py-4"><i class="fa-solid fa-circle-exclamation me-1"></i> ' + (response.message || 'Không thể tải dữ liệu') + '</td></tr>');
             }
         },
         error: function() {
-            $('#students-list').html('<tr><td colspan="9" class="text-center text-danger py-4"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có lỗi xảy ra khi tải dữ liệu</td></tr>');
+            $('#students-list').html('<tr><td colspan="' + studentTableColumnCount + '" class="text-center text-danger py-4"><i class="fa-solid fa-triangle-exclamation me-1"></i> Có lỗi xảy ra khi tải dữ liệu</td></tr>');
         }
     });
 }
 
 function renderStudents(data, total, page) {
     if (!data || data.length === 0) {
-        $('#students-list').html('<tr><td colspan="9" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Không tìm thấy học viên nào</td></tr>');
+        $('#students-list').html('<tr><td colspan="' + studentTableColumnCount + '" class="text-center text-muted py-4"><i class="fa-solid fa-inbox me-1"></i> Không tìm thấy học viên nào</td></tr>');
         $('#pagination-container').html('');
         $('#showing-info').html('');
         return;
@@ -386,13 +402,15 @@ function renderStudents(data, total, page) {
         html += '</td>';
         html += '<td><small class="text-muted">' + formatDate(item.enrolled_at) + '</small></td>';
         html += '<td>' + (item.completed_at ? '<small class="text-success"><i class="fa-solid fa-check me-1"></i>' + formatDate(item.completed_at) + '</small>' : '<small class="text-muted">—</small>') + '</td>';
-        html += '<td>';
-        html += '<div class="btn-group btn-group-sm">';
-        if (item.status === 'active') {
-            html += '<button class="btn btn-sm btn-danger-light remove-enrollment" data-user-id="' + item.user_id + '" data-course-id="' + item.course_id + '" data-name="' + escapeHtml(item.fullname || item.username) + '" title="Huỷ ghi danh"><i class="fa-solid fa-user-xmark"></i></button>';
+        if (canManageStudents) {
+            html += '<td>';
+            html += '<div class="btn-group btn-group-sm">';
+            if (item.status === 'active') {
+                html += '<button class="btn btn-sm btn-danger-light remove-enrollment" data-user-id="' + item.user_id + '" data-course-id="' + item.course_id + '" data-name="' + escapeHtml(item.fullname || item.username) + '" title="Huỷ ghi danh"><i class="fa-solid fa-user-xmark"></i></button>';
+            }
+            html += '</div>';
+            html += '</td>';
         }
-        html += '</div>';
-        html += '</td>';
         html += '</tr>';
     });
 

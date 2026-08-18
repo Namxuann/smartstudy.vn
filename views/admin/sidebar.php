@@ -742,7 +742,13 @@ if (!defined('IN_SITE')) {
                             </li>
                         <?php endif ?>
 
-                        <?php if (checkPermission($getUser['admin'], 'view_course') == true): ?>
+                        <?php
+                        $canViewCourses = checkPermission($getUser['admin'], 'view_course')
+                            || checkPermission($getUser['admin'], 'edit_course')
+                            || checkPermission($getUser['admin'], 'manage_students_course');
+                        $canManageCourseStudents = checkPermission($getUser['admin'], 'manage_students_course');
+                        ?>
+                        <?php if ($canViewCourses): ?>
                             <li
                                 class="slide has-sub <?= show_sidebar(['courses', 'course-builder', 'course-students']); ?>">
                                 <a href="javascript:void(0);"
@@ -762,10 +768,12 @@ if (!defined('IN_SITE')) {
                                                 class="side-menu__item <?= active_sidebar(['course-builder']); ?>">Tạo khoá học mới</a>
                                         </li>
                                     <?php endif ?>
-                                    <li class="slide">
-                                        <a href="<?= base_url_admin('course-students'); ?>"
-                                            class="side-menu__item <?= active_sidebar(['course-students']); ?>">Quản lý học viên</a>
-                                    </li>
+                                    <?php if ($canManageCourseStudents): ?>
+                                        <li class="slide">
+                                            <a href="<?= base_url_admin('course-students'); ?>"
+                                                class="side-menu__item <?= active_sidebar(['course-students']); ?>">Quản lý học viên</a>
+                                        </li>
+                                    <?php endif ?>
                                 </ul>
                             </li>
                         <?php endif ?>

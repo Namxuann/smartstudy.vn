@@ -47,7 +47,9 @@ $(document).ready(function() {
     if (currentCourseId > 0) {
         loadCourseData();
         loadCurriculum();
-        loadStudents();
+        if ($('#students-list').length) {
+            loadStudents();
+        }
     }
 
     // Save Course Info
@@ -89,7 +91,11 @@ $(document).ready(function() {
                         $('#course_id').val(currentCourseId);
                         $('#curriculum-tab, #students-tab').removeClass('disabled');
                         $('#curriculum-tab, #students-tab').removeAttr('disabled');
-                        history.pushState(null, '', '?id=' + currentCourseId);
+                        let courseUrl = new URL(window.location.href);
+                        courseUrl.searchParams.set('module', 'admin');
+                        courseUrl.searchParams.set('action', 'course-builder');
+                        courseUrl.searchParams.set('id', currentCourseId);
+                        history.pushState(null, '', courseUrl.pathname + '?' + courseUrl.searchParams.toString());
                     }
                 } else {
                     showMessage(response.message, 'error');

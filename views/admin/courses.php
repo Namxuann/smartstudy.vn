@@ -10,11 +10,17 @@ $body['header'] = '';
 $body['footer'] = '';
 
 require_once(__DIR__ . '/../../models/is_admin.php');
+
+$canViewCourses = checkPermission($getUser['admin'], 'view_course')
+    || checkPermission($getUser['admin'], 'edit_course')
+    || checkPermission($getUser['admin'], 'manage_students_course');
+$canEditCourses = checkPermission($getUser['admin'], 'edit_course');
+
 require_once(__DIR__ . '/header.php');
 require_once(__DIR__ . '/sidebar.php');
 
 // Permission check
-if (checkPermission($getUser['admin'], 'view_course') != true) {
+if (!$canViewCourses) {
     die('<script type="text/javascript">if(!alert("Bạn không có quyền sử dụng tính năng này")){window.history.back();}</script>');
 }
 ?>
@@ -25,7 +31,9 @@ if (checkPermission($getUser['admin'], 'view_course') != true) {
         <div class="d-md-flex d-block align-items-center justify-content-between my-4 page-header-breadcrumb">
             <h1 class="page-title fw-semibold fs-18 mb-0"><i class="fa-solid fa-graduation-cap"></i> Quản lý Khoá học</h1>
             <div class="d-flex">
-                <a href="<?= base_url_admin('course-builder') ?>" class="btn btn-sm btn-primary btn-wave"><i class="fa-solid fa-plus"></i> Tạo khoá học mới</a>
+                <?php if ($canEditCourses): ?>
+                    <a href="<?= base_url_admin('course-builder') ?>" class="btn btn-sm btn-primary btn-wave"><i class="fa-solid fa-plus"></i> Tạo khoá học mới</a>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -117,11 +125,15 @@ $(document).ready(function() {
     
     $(document).on('click', '.pagination a', function(e) {
         e.preventDefault();
+        if ($(this).closest('.page-item').hasClass('disabled')) {
+            return;
+        }
         let page = $(this).attr('data-page');
         loadCourses(page);
     });
 
     $(document).on('change', '.course-status-toggle', function() {
+        let checkbox = $(this);
         let id = $(this).data('id');
         let status = $(this).is(':checked') ? 1 : 0;
         
@@ -138,8 +150,13 @@ $(document).ready(function() {
                 if (response.status === 'success') {
                     showMessage(response.message, 'success');
                 } else {
+                    checkbox.prop('checked', !status);
                     showMessage(response.message, 'error');
                 }
+            },
+            error: function() {
+                checkbox.prop('checked', !status);
+                showMessage('Có lỗi xảy ra', 'error');
             }
         });
     });

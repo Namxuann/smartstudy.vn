@@ -64,13 +64,20 @@ class Courses extends DB {
         return $this->remove('course_sections', "id = ?", [(int)$id]);
     }
     public function reorderSections($course_id, $order_array) {
-        $success = true;
         foreach ($order_array as $sort_order => $section_id) {
-            if (!$this->update('course_sections', ['sort_order' => $sort_order], "id = ? AND course_id = ?", [(int)$section_id, (int)$course_id])) {
-                $success = false;
+            $section = $this->get_row_safe(
+                'SELECT id, sort_order FROM course_sections WHERE id = ? AND course_id = ?',
+                [(int) $section_id, (int) $course_id]
+            );
+            if (!$section) {
+                return false;
+            }
+            if ((int) $section['sort_order'] !== (int) $sort_order
+                && !$this->update('course_sections', ['sort_order' => (int) $sort_order], 'id = ? AND course_id = ?', [(int) $section_id, (int) $course_id])) {
+                return false;
             }
         }
-        return $success;
+        return true;
     }
     public function getLessons($section_id) {
         return $this->get_list_safe("SELECT * FROM course_lessons WHERE section_id = ? ORDER BY sort_order ASC, id ASC", [(int)$section_id]);
@@ -88,13 +95,20 @@ class Courses extends DB {
         return $this->remove('course_lessons', "id = ?", [(int)$id]);
     }
     public function reorderLessons($section_id, $order_array) {
-        $success = true;
         foreach ($order_array as $sort_order => $lesson_id) {
-            if (!$this->update('course_lessons', ['sort_order' => $sort_order], "id = ? AND section_id = ?", [(int)$lesson_id, (int)$section_id])) {
-                $success = false;
+            $lesson = $this->get_row_safe(
+                'SELECT id, sort_order FROM course_lessons WHERE id = ? AND section_id = ?',
+                [(int) $lesson_id, (int) $section_id]
+            );
+            if (!$lesson) {
+                return false;
+            }
+            if ((int) $lesson['sort_order'] !== (int) $sort_order
+                && !$this->update('course_lessons', ['sort_order' => (int) $sort_order], 'id = ? AND section_id = ?', [(int) $lesson_id, (int) $section_id])) {
+                return false;
             }
         }
-        return $success;
+        return true;
     }
     public function getQuizQuestions($lesson_id) {
         return $this->get_list_safe("SELECT * FROM course_quiz_questions WHERE lesson_id = ? ORDER BY sort_order ASC, id ASC", [(int)$lesson_id]);

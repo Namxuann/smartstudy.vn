@@ -26,6 +26,8 @@ if (checkPermission($getUser['admin'], 'edit_course') != true) {
     die('<script type="text/javascript">if(!alert("Bạn không có quyền sử dụng tính năng này")){window.history.back();}</script>');
 }
 
+$canManageStudents = checkPermission($getUser['admin'], 'manage_students_course');
+
 $course_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $mode = $course_id > 0 ? 'edit' : 'create';
 $course = [];
@@ -54,9 +56,11 @@ if ($mode == 'edit') {
                     <li class="nav-item" role="presentation">
                         <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Nội dung khoá học</button>
                     </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Học viên</button>
-                    </li>
+                    <?php if ($canManageStudents): ?>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Học viên</button>
+                        </li>
+                    <?php endif; ?>
                 </ul>
                 <div class="tab-content" id="courseBuilderTabsContent">
                     <!-- Tab 1: Thông tin khoá học -->
@@ -131,37 +135,39 @@ if ($mode == 'edit') {
                         </div>
                     </div>
 
-                    <!-- Tab 3: Học viên -->
-                    <div class="tab-pane fade" id="students" role="tabpanel" aria-labelledby="students-tab">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <div class="input-group">
-                                    <input type="text" class="form-control" id="search-student" placeholder="Tìm tên/email/username...">
-                                    <button class="btn btn-primary" type="button" id="btn-search-student"><i class="fa-solid fa-search"></i></button>
+                    <?php if ($canManageStudents): ?>
+                        <!-- Tab 3: Học viên -->
+                        <div class="tab-pane fade" id="students" role="tabpanel" aria-labelledby="students-tab">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="search-student" placeholder="Tìm tên/email/username...">
+                                        <button class="btn btn-primary" type="button" id="btn-search-student"><i class="fa-solid fa-search"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 text-end">
+                                    <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollModal"><i class="fa-solid fa-user-plus"></i> Thêm học viên</button>
                                 </div>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#enrollModal"><i class="fa-solid fa-user-plus"></i> Thêm học viên</button>
+                            <div class="table-responsive">
+                                <table class="table table-striped table-hover border text-nowrap">
+                                    <thead>
+                                        <tr>
+                                            <th>Username</th>
+                                            <th>Email</th>
+                                            <th>Tiến độ</th>
+                                            <th>Ngày ghi danh</th>
+                                            <th>Trạng thái</th>
+                                            <th>Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="students-list">
+                                        <!-- AJAX loaded -->
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover border text-nowrap">
-                                <thead>
-                                    <tr>
-                                        <th>Username</th>
-                                        <th>Email</th>
-                                        <th>Tiến độ</th>
-                                        <th>Ngày ghi danh</th>
-                                        <th>Trạng thái</th>
-                                        <th>Thao tác</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="students-list">
-                                    <!-- AJAX loaded -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <?php endif; ?>
                 </div>
             </div>
         </div>
@@ -265,28 +271,30 @@ if ($mode == 'edit') {
     </div>
 </div>
 
-<!-- Modal Enroll Student -->
-<div class="modal fade" id="enrollModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Ghi danh học viên</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <div class="mb-3">
-                    <label class="form-label">Chọn học viên</label>
-                    <select class="form-select select2-user" id="enroll_user_id" style="width: 100%;">
-                        <option value="">-- Tìm kiếm user --</option>
-                    </select>
+<?php if ($canManageStudents): ?>
+    <!-- Modal Enroll Student -->
+    <div class="modal fade" id="enrollModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Ghi danh học viên</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" class="btn btn-success" id="btn-submit-enroll">Ghi danh</button>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Chọn học viên</label>
+                        <select class="form-select select2-user" id="enroll_user_id" style="width: 100%;">
+                            <option value="">-- Tìm kiếm user --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-success" id="btn-submit-enroll">Ghi danh</button>
+                </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
 
 <?php require_once(__DIR__ . '/footer.php'); ?>

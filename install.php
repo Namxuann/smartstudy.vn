@@ -734,6 +734,11 @@ insert_options('time_cron_suppliers_api52', 0);
 insert_options('time_cron_suppliers_api53', 0);
 insert_options('time_cron_suppliers_api54', 0);
 
+require_once(__DIR__ . '/database/migrations/lms_schema.php');
+if (!run_lms_schema_migration($SMARTSTUDY)) {
+    error_log('Smartstudy LMS schema migration did not complete successfully.');
+}
+
 //
 if (!column_exists('suppliers', 'notes')) {
     $SMARTSTUDY->query(" ALTER TABLE `suppliers` ADD COLUMN `notes` TEXT NULL DEFAULT NULL COMMENT 'Lưu trữ JSON metadata (sync progress, settings...)' AFTER `update_gettime` ");
