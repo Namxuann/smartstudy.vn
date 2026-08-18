@@ -44,10 +44,6 @@ if (isset($_POST['submit'])) {
         die('<script type="text/javascript">if(!alert("Slug này đã tồn tại trong hệ thống.")){window.history.back().location.reload();}</script>');
     }
     $productType = (isset($_POST['product_type']) && $_POST['product_type'] === 'course') ? 'course' : 'stock';
-    $lmsCourseId = !empty($_POST['lms_course_id']) ? validate_int($_POST['lms_course_id'], 1) : null;
-    if ($productType === 'course' && !$lmsCourseId) {
-        die('<script type="text/javascript">if(!alert("Vui lòng nhập ID khóa học Tutor LMS hợp lệ.")){window.history.back();}</script>');
-    }
     $images = '';
     if (isset($_FILES['images']['name']) && !empty($_FILES['images']['name'])) {
         foreach ($_FILES['images']['name'] as $name => $value) {
@@ -88,7 +84,6 @@ if (isset($_POST['submit'])) {
         'hide_in_shop'      => !empty($_POST['hide_in_shop']) ? check_string($_POST['hide_in_shop']) : 0,
         'preview_uid'       => $productType === 'course' ? 0 : (isset($_POST['preview_uid']) ? check_string($_POST['preview_uid']) : 0),
         'product_type'      => $productType,
-        'lms_course_id'     => $productType === 'course' ? $lmsCourseId : null,
         'sold'              => !empty($_POST['sold']) ? check_string($_POST['sold']) : 0,
         'create_gettime'    => gettime(),
         'update_gettime'    => gettime()
@@ -418,11 +413,6 @@ if (isset($_POST['submit'])) {
                                         <option value="stock"><?= __('Sản phẩm từ kho / API'); ?></option>
                                         <option value="course"><?= __('Khóa học trực tuyến'); ?></option>
                                     </select>
-                                </div>
-                                <div class="col-sm-12 mb-2" id="lms_course_field">
-                                    <label class="form-label"><?= __('ID khóa học Tutor LMS:'); ?></label>
-                                    <input type="number" min="1" class="form-control" name="lms_course_id" placeholder="Ví dụ: 123">
-                                    <div class="form-text"><?= __('Nhập ID khóa học tại learn.smartstudy.vn. Sản phẩm khóa học luôn bán 1 quyền truy cập và không dùng kho hàng/API.'); ?></div>
                                 </div>
                                 <div class="col-sm-12 mb-2">
                                     <label class="form-label" for="example-hf-email"><?= __('Trạng thái:'); ?> <span

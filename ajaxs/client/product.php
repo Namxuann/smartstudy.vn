@@ -10,7 +10,8 @@ require_once(__DIR__ . "/../../libs/SMTPMailer.php");
 require_once(__DIR__ . '/../../libs/TelegramQueue.php');
 require_once(__DIR__ . '/../../libs/suppliers.php');
 require_once(__DIR__ . '/../../libs/database/users.php');
-require_once(__DIR__ . '/../../libs/lms_bridge.php');
+require_once(__DIR__ . '/../../libs/database/courses.php');
+require_once(__DIR__ . '/../../libs/database/enrollments.php');
 
 header('Content-Type: application/json; charset=utf-8');
 
@@ -108,12 +109,15 @@ if ($_REQUEST['action'] == 'buyProduct') {
     }
 
     $isCourse = (($product['product_type'] ?? 'stock') === 'course');
+    $nativeCourse = null;
     if ($isCourse) {
         if (!empty($_REQUEST['api_key'])) {
             http_response_code(403);
             die(json_encode(['status' => 'error', 'msg' => __('Khóa học chỉ có thể mua trực tiếp trên website')], JSON_UNESCAPED_UNICODE));
         }
-        if (empty($product['lms_course_id'])) {
+        $CoursesDB = new Courses();
+        $nativeCourse = $CoursesDB->getCourseByProductId((int)$product['id']);
+        if (!$nativeCourse) {
             http_response_code(503);
             die(json_encode(['status' => 'error', 'msg' => __('Khóa học chưa được liên kết với khu vực học tập')], JSON_UNESCAPED_UNICODE));
         }
@@ -121,11 +125,8 @@ if ($_REQUEST['action'] == 'buyProduct') {
             http_response_code(400);
             die(json_encode(['status' => 'error', 'msg' => __('Vui lòng cập nhật email hợp lệ trong hồ sơ trước khi mua khóa học')], JSON_UNESCAPED_UNICODE));
         }
-        $existingEnrollment = $SMARTSTUDY->get_row_safe(
-            'SELECT `id` FROM `lms_enrollment_jobs` WHERE `user_id` = ? AND `course_id` = ?',
-            [(int)$getUser['id'], (int)$product['lms_course_id']]
-        );
-        if ($existingEnrollment) {
+        $EnrollDB = new Enrollments();
+        if ($EnrollDB->isEnrolled((int)$getUser['id'], (int)$nativeCourse['id'])) {
             http_response_code(409);
             die(json_encode(['status' => 'error', 'msg' => __('Bạn đã sở hữu khóa học này. Hãy mở Khu vực học tập để tiếp tục học.')], JSON_UNESCAPED_UNICODE));
         }
@@ -2814,28 +2815,25 @@ if ($_REQUEST['action'] == 'buyProduct') {
                 'device'            => getUserAgent()
             ]);
             if ($isInsertOrder) {
-                if ($isCourse) {
-                    $enrollmentJobId = smartstudy_enqueue_enrollment($SMARTSTUDY, $isInsertOrder, $trans_id, $product, $getUser);
-                    if ($enrollmentJobId < 0) {
+                if ($isCourse && $nativeCourse) {
+                    $EnrollDB = new Enrollments();
+                    $enrollResult = $EnrollDB->enrollUser((int)$getUser['id'], (int)$nativeCourse['id'], (int)$isInsertOrder);
+                    if (!$enrollResult) {
+                        if ($EnrollDB->isEnrolled((int)$getUser['id'], (int)$nativeCourse['id'])) {
+                            $SMARTSTUDY->remove('product_order', ' `id` = ?', [(int)$isInsertOrder]);
+                            $User->RefundCredits($getUser['id'], $pay, __('Hoàn tiền do khóa học đã được sở hữu') . ' #' . $trans_id, 'REFUND_' . $trans_id);
+                            http_response_code(409);
+                            die(json_encode([
+                                'status' => 'error',
+                                'msg' => __('Bạn đã sở hữu khóa học này. Số tiền của giao dịch trùng đã được hoàn lại.')
+                            ], JSON_UNESCAPED_UNICODE));
+                        }
                         $SMARTSTUDY->remove('product_order', ' `id` = ?', [(int)$isInsertOrder]);
-                        $User->RefundCredits($getUser['id'], $pay, __('Hoàn tiền do khóa học đã được sở hữu') . ' #' . $trans_id, 'REFUND_' . $trans_id);
-                        http_response_code(409);
-                        die(json_encode([
-                            'status' => 'error',
-                            'msg' => __('Bạn đã sở hữu khóa học này. Số tiền của giao dịch trùng đã được hoàn lại.')
-                        ], JSON_UNESCAPED_UNICODE));
-                    }
-                    $enrollmentQueued = $enrollmentJobId > 0;
-                    if (!$enrollmentQueued) {
-                        $SMARTSTUDY->remove('product_order', ' `id` = ?', [(int)$isInsertOrder]);
-                        $User->RefundCredits($getUser['id'], $pay, __('Hoàn tiền do không thể tạo hàng đợi cấp khóa học') . ' #' . $trans_id, 'REFUND_' . $trans_id);
+                        $User->RefundCredits($getUser['id'], $pay, __('Hoàn tiền do không thể cấp quyền truy cập khóa học') . ' #' . $trans_id, 'REFUND_' . $trans_id);
                         die(json_encode([
                             'status' => 'error',
                             'msg' => __('Không thể ghi nhận quyền truy cập khóa học, số tiền đã được hoàn lại')
                         ], JSON_UNESCAPED_UNICODE));
-                    }
-                    if ($enrollmentQueued) {
-                        $enrollmentDelivered = smartstudy_deliver_enrollment($SMARTSTUDY, $enrollmentJobId);
                     }
                 }
                 if ($SMARTSTUDY->site('cong_tien_nguoi_ban') == 1) {
