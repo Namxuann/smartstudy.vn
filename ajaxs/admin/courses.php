@@ -36,6 +36,12 @@ switch ($action) {
             'title' => $title,
             'product_id' => $product_id,
             'slug' => $slug,
+            'subtitle' => check_string($_POST['subtitle'] ?? ''),
+            'description' => $_POST['description'] ?? '',
+            'intro_video' => check_string($_POST['intro_video'] ?? ($_POST['intro_video_url'] ?? '')),
+            'level' => check_string($_POST['level'] ?? 'all'),
+            'language' => check_string($_POST['language'] ?? 'vi'),
+            'is_published' => isset($_POST['status']) ? 1 : 0,
             'created_at' => date('Y-m-d H:i:s'),
             'updated_at' => date('Y-m-d H:i:s')
         ];
@@ -61,8 +67,13 @@ switch ($action) {
         if (isset($_POST['description'])) $data['description'] = $_POST['description']; // Keep HTML
         if (isset($_POST['featured_image'])) $data['featured_image'] = check_string($_POST['featured_image']);
         if (isset($_POST['intro_video'])) $data['intro_video'] = check_string($_POST['intro_video']);
+        if (isset($_POST['intro_video_url'])) $data['intro_video'] = check_string($_POST['intro_video_url']);
         if (isset($_POST['level'])) $data['level'] = check_string($_POST['level']);
         if (isset($_POST['language'])) $data['language'] = check_string($_POST['language']);
+        if (isset($_POST['product_id'])) $data['product_id'] = validate_int($_POST['product_id']);
+        elseif (isset($_POST['linked_product_id'])) $data['product_id'] = validate_int($_POST['linked_product_id']);
+        if (isset($_POST['status'])) $data['is_published'] = 1;
+        else $data['is_published'] = 0;
         $data['updated_at'] = date('Y-m-d H:i:s');
         
         if ($coursesDB->update_by_id($data, $id)) {
@@ -83,7 +94,13 @@ switch ($action) {
 
     case 'getCourse':
         $id = isset($_GET['id']) ? validate_int($_GET['id']) : 0;
-        $course = $coursesDB->select_by_id($id);
+        $course = $SMARTSTUDY->get_row_safe(
+            "SELECT c.*, p.name AS product_name
+             FROM courses c
+             LEFT JOIN products p ON p.id = c.product_id
+             WHERE c.id = ?",
+            [$id]
+        );
         if ($course) {
             echo json_encode(['status' => 'success', 'data' => $course]);
         } else {
@@ -165,7 +182,7 @@ switch ($action) {
         $section_id = isset($_POST['section_id']) ? validate_int($_POST['section_id']) : 0;
         $course_id = isset($_POST['course_id']) ? validate_int($_POST['course_id']) : 0;
         $title = isset($_POST['title']) ? check_string($_POST['title']) : '';
-        $type = isset($_POST['lesson_type']) ? check_string($_POST['lesson_type']) : 'text';
+        $type = check_string($_POST['lesson_type'] ?? ($_POST['type'] ?? 'text'));
         
         if ($section_id > 0 && $course_id > 0 && !empty($title)) {
             $slug = vn2en($title) . '-' . time();
@@ -175,6 +192,12 @@ switch ($action) {
                 'title' => $title,
                 'slug' => check_string($slug),
                 'lesson_type' => $type,
+                'content' => $_POST['content'] ?? '',
+                'media_url' => check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? ''))),
+                'media_duration' => validate_int($_POST['duration'] ?? 0),
+                'embed_code' => $_POST['embed_code'] ?? '',
+                'is_free_preview' => (int) ($_POST['is_free_preview'] ?? ($_POST['is_free'] ?? 0)) === 1 ? 1 : 0,
+                'is_published' => (int) ($_POST['is_published'] ?? ($_POST['status'] ?? 0)) === 1 ? 1 : 0,
                 'created_at' => date('Y-m-d H:i:s'),
                 'updated_at' => date('Y-m-d H:i:s')
             ];
@@ -195,10 +218,12 @@ switch ($action) {
             $data = [
                 'title' => check_string($_POST['title'] ?? ''),
                 'content' => $_POST['content'] ?? '',
-                'lesson_type' => check_string($_POST['lesson_type'] ?? ''),
-                'media_url' => check_string($_POST['media_url'] ?? ''),
+                'lesson_type' => check_string($_POST['lesson_type'] ?? ($_POST['type'] ?? 'text')),
+                'media_url' => check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? ''))),
+                'media_duration' => validate_int($_POST['duration'] ?? 0),
                 'embed_code' => $_POST['embed_code'] ?? '',
-                'is_free_preview' => isset($_POST['is_free_preview']) ? 1 : 0,
+                'is_free_preview' => (int) ($_POST['is_free_preview'] ?? ($_POST['is_free'] ?? 0)) === 1 ? 1 : 0,
+                'is_published' => (int) ($_POST['is_published'] ?? ($_POST['status'] ?? 0)) === 1 ? 1 : 0,
                 'updated_at' => date('Y-m-d H:i:s')
             ];
             if ($coursesDB->updateLesson($id, $data)) {
@@ -207,6 +232,44 @@ switch ($action) {
                 echo json_encode(['status' => 'error', 'message' => __('Failed to update')]);
             }
         }
+        break;
+
+    case 'getLesson':
+        $id = validate_int($_REQUEST['lesson_id'] ?? ($_REQUEST['id'] ?? 0));
+        $lesson = $id > 0 ? $coursesDB->getLesson($id) : false;
+        if ($lesson) {
+            echo json_encode(['status' => 'success', 'lesson' => $lesson]);
+        } else {
+            echo json_encode(['status' => 'error', 'message' => __('Lesson not found')]);
+        }
+        break;
+
+    case 'getCurriculum':
+        $course_id = validate_int($_REQUEST['course_id'] ?? 0);
+        if ($course_id <= 0) {
+            echo json_encode(['status' => 'error', 'message' => __('Invalid course ID')]);
+            break;
+        }
+
+        $html = '';
+        foreach ($coursesDB->getFullCurriculum($course_id) as $section) {
+            $sectionId = (int) $section['id'];
+            $html .= '<div class="accordion-item" data-id="' . $sectionId . '">';
+            $html .= '<div class="section-header d-flex align-items-center justify-content-between p-3">';
+            $html .= '<h6 class="mb-0">' . htmlspecialchars($section['title'], ENT_QUOTES, 'UTF-8') . '</h6>';
+            $html .= '<button type="button" class="btn btn-sm btn-outline-primary btn-add-lesson" data-section-id="' . $sectionId . '"><i class="fa-solid fa-plus"></i> ' . __('Add lesson') . '</button>';
+            $html .= '</div><div class="sortable-lessons list-group list-group-flush">';
+            foreach ($section['lessons'] as $lesson) {
+                $lessonId = (int) $lesson['id'];
+                $lessonType = htmlspecialchars($lesson['lesson_type'], ENT_QUOTES, 'UTF-8');
+                $html .= '<div class="list-group-item d-flex align-items-center justify-content-between" data-id="' . $lessonId . '">';
+                $html .= '<span>' . htmlspecialchars($lesson['title'], ENT_QUOTES, 'UTF-8') . ' <small class="text-muted">(' . $lessonType . ')</small></span>';
+                $html .= '<button type="button" class="btn btn-sm btn-outline-secondary btn-edit-lesson" data-id="' . $lessonId . '" data-section-id="' . $sectionId . '" data-type="' . $lessonType . '"><i class="fa-solid fa-pen"></i></button>';
+                $html .= '</div>';
+            }
+            $html .= '</div></div>';
+        }
+        echo json_encode(['status' => 'success', 'html' => $html]);
         break;
 
     case 'deleteLesson':
@@ -224,6 +287,30 @@ switch ($action) {
                 echo json_encode(['status' => 'success']);
             }
         }
+        break;
+
+    case 'searchProducts':
+        $q = isset($_GET['q']) ? check_string($_GET['q']) : '';
+        $page = max(1, validate_int($_GET['page'] ?? 1));
+        $perPage = 20;
+        $offset = ($page - 1) * $perPage;
+        $params = [];
+        $whereSql = '';
+        if ($q !== '') {
+            $whereSql = 'WHERE (name LIKE ? OR id = ?)';
+            $params = ['%' . $q . '%', (int) $q];
+        }
+        $countRow = $SMARTSTUDY->get_row_safe("SELECT COUNT(*) AS total FROM products $whereSql", $params);
+        $products = $SMARTSTUDY->get_list_safe(
+            "SELECT id, name FROM products $whereSql ORDER BY id DESC LIMIT ? OFFSET ?",
+            array_merge($params, [$perPage, $offset])
+        );
+        $total = $countRow ? (int) $countRow['total'] : 0;
+        echo json_encode([
+            'status' => 'success',
+            'data' => $products ?: [],
+            'has_more' => ($offset + $perPage) < $total
+        ]);
         break;
 
     case 'uploadMedia':

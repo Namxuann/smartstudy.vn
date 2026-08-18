@@ -3,8 +3,38 @@ $(document).ready(function() {
     let currentSectionForNewLesson = null;
     let ckeditorInstances = {};
 
-    // Initialize Select2
-    if ($('.select2').length) {
+    // Search linked products without loading the entire product table.
+    if ($('#linked_product_id').length) {
+        $('#linked_product_id').select2({
+            placeholder: '-- Tìm kiếm sản phẩm --',
+            allowClear: true,
+            ajax: {
+                url: BASE_URL + 'ajaxs/admin/courses.php',
+                type: 'GET',
+                dataType: 'json',
+                delay: 300,
+                data: function(params) {
+                    return {
+                        action: 'searchProducts',
+                        q: params.term || '',
+                        page: params.page || 1
+                    };
+                },
+                processResults: function(data, params) {
+                    params.page = params.page || 1;
+                    if (data.status !== 'success') return { results: [] };
+                    return {
+                        results: (data.data || []).map(function(item) {
+                            return { id: item.id, text: item.name + ' (#' + item.id + ')' };
+                        }),
+                        pagination: { more: data.has_more || false }
+                    };
+                },
+                cache: true
+            },
+            minimumInputLength: 0
+        });
+    } else if ($('.select2').length) {
         $('.select2').select2();
     }
     
@@ -20,17 +50,29 @@ $(document).ready(function() {
         loadStudents();
     }
 
-    // Tab interactions
-    $('#courseBuilderTabs a').on('click', function (e) {
-        e.preventDefault();
-        $(this).tab('show');
-    });
-
     // Save Course Info
     $('#btn-save-course').click(function() {
+        let title = $('#title').val();
+        if (!title || !title.trim()) {
+            showMessage('Vui lòng nhập tên khoá học', 'error');
+            return;
+        }
+
         let formData = new FormData($('#form-course-info')[0]);
-        formData.append('action', 'saveCourse');
+        formData.append('action', currentCourseId > 0 ? 'updateCourse' : 'createCourse');
         formData.append('description', CKEDITOR.instances.description.getData());
+        formData.append('intro_video', $('#intro_video_url').val() || '');
+
+        if (currentCourseId > 0) {
+            formData.append('id', currentCourseId);
+        } else {
+            let productId = $('#linked_product_id').val();
+            if (!productId) {
+                showMessage('Vui lòng chọn sản phẩm liên kết', 'error');
+                return;
+            }
+            formData.append('product_id', productId);
+        }
         
         $.ajax({
             url: BASE_URL + 'ajaxs/admin/courses.php',
@@ -42,15 +84,19 @@ $(document).ready(function() {
             success: function(response) {
                 if(response.status === 'success') {
                     showMessage(response.message, 'success');
-                    if (currentCourseId == 0 && response.course_id) {
-                        currentCourseId = response.course_id;
+                    if (currentCourseId == 0 && response.id) {
+                        currentCourseId = response.id;
                         $('#course_id').val(currentCourseId);
                         $('#curriculum-tab, #students-tab').removeClass('disabled');
+                        $('#curriculum-tab, #students-tab').removeAttr('disabled');
                         history.pushState(null, '', '?id=' + currentCourseId);
                     }
                 } else {
                     showMessage(response.message, 'error');
                 }
+            },
+            error: function() {
+                showMessage('Có lỗi xảy ra, vui lòng thử lại', 'error');
             }
         });
     });
@@ -78,7 +124,7 @@ $(document).ready(function() {
                     url: BASE_URL + 'ajaxs/admin/courses.php',
                     type: 'POST',
                     data: {
-                        action: 'addSection',
+                        action: 'createSection',
                         course_id: currentCourseId,
                         title: result.value
                     },
@@ -202,8 +248,8 @@ $(document).ready(function() {
                     if (res.status === 'success') {
                         let l = res.lesson;
                         $('#lesson_title').val(l.title);
-                        $('#lesson_is_free').prop('checked', l.is_free == 1);
-                        $('#lesson_status').prop('checked', l.status == 1);
+                        $('#lesson_is_free').prop('checked', l.is_free_preview == 1);
+                        $('#lesson_status').prop('checked', l.is_published == 1);
                         
                         if (type === 'text' && l.content) {
                             ckeditorInstances['lesson_content_text'].setData(l.content);
@@ -220,8 +266,15 @@ $(document).ready(function() {
     // Save Lesson
     $('#btn-save-lesson').click(function() {
         let formData = new FormData($('#form-lesson')[0]);
-        formData.append('action', 'saveLesson');
+        let lessonId = $('#lesson_id').val();
+        formData.append('action', lessonId ? 'updateLesson' : 'createLesson');
         formData.append('course_id', currentCourseId);
+        formData.append('lesson_type', $('#lesson_type').val());
+        formData.append('is_free_preview', $('#lesson_is_free').is(':checked') ? '1' : '0');
+        formData.append('is_published', $('#lesson_status').is(':checked') ? '1' : '0');
+        if (lessonId) {
+            formData.append('id', lessonId);
+        }
         
         if ($('#lesson_type').val() === 'text') {
             formData.set('content', ckeditorInstances['lesson_content_text'].getData());
@@ -289,17 +342,66 @@ $(document).ready(function() {
             url: BASE_URL + 'ajaxs/admin/courses.php',
             type: 'POST',
             data: {
-                action: 'updateOrder',
-                type: type,
-                order: order,
-                parent_id: parentId
+                action: type === 'sections' ? 'reorderSections' : 'reorderLessons',
+                course_id: currentCourseId,
+                section_id: parentId,
+                order: JSON.stringify(order)
             }
         });
     }
 
-    // Mock functions for missing pieces to satisfy the prompt requirements
-    function loadCourseData() { /* AJAX to load course info into form */ }
-    function loadStudents() { /* AJAX to load enrolled students */ }
+    function loadCourseData() {
+        $.ajax({
+            url: BASE_URL + 'ajaxs/admin/courses.php',
+            type: 'GET',
+            data: { action: 'getCourse', id: currentCourseId },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status !== 'success') return;
+                let c = res.data;
+                $('#title').val(c.title || '');
+                $('#subtitle').val(c.subtitle || '');
+                $('#level').val(c.level || 'all');
+                $('#language').val(c.language || 'vi');
+                $('#intro_video_url').val(c.intro_video || '');
+                $('#status').prop('checked', c.is_published == 1);
+                if (c.description && CKEDITOR.instances.description) {
+                    CKEDITOR.instances.description.setData(c.description);
+                }
+                if (c.product_id && c.product_name) {
+                    let option = new Option(c.product_name + ' (#' + c.product_id + ')', c.product_id, true, true);
+                    $('#linked_product_id').append(option).trigger('change');
+                }
+            }
+        });
+    }
+
+    function loadStudents() {
+        $.ajax({
+            url: BASE_URL + 'ajaxs/admin/courses.php',
+            type: 'GET',
+            data: { action: 'listStudents', course_id: currentCourseId },
+            dataType: 'json',
+            success: function(res) {
+                if (res.status !== 'success') return;
+                let html = '';
+                (res.data || []).forEach(function(student) {
+                    html += '<tr>';
+                    html += '<td>' + escapeHtml(student.username || '') + '</td>';
+                    html += '<td>' + escapeHtml(student.email || '') + '</td>';
+                    html += '<td>' + (student.progress || 0) + '%</td>';
+                    html += '<td>' + escapeHtml(student.enrolled_at || '') + '</td>';
+                    html += '<td>' + escapeHtml(student.status || '') + '</td>';
+                    html += '<td></td></tr>';
+                });
+                $('#students-list').html(html || '<tr><td colspan="6" class="text-center">Chưa có học viên</td></tr>');
+            }
+        });
+    }
+
+    function escapeHtml(value) {
+        return $('<div>').text(value).html();
+    }
     function initQuizBuilder() {
         $('#btn-add-question').off('click').on('click', function() {
             let qHtml = `
@@ -357,5 +459,18 @@ $(document).ready(function() {
             questions.push(q);
         });
         return questions;
+    }
+
+    function showMessage(message, type) {
+        let icon = type === 'success' ? 'success' : (type === 'error' ? 'error' : 'info');
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: icon,
+            title: message || 'Đã xảy ra lỗi',
+            showConfirmButton: false,
+            timer: 3000,
+            timerProgressBar: true
+        });
     }
 });

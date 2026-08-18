@@ -15,7 +15,7 @@ $body['footer'] = '
     <script src="https://cdn.ckeditor.com/4.16.2/standard/ckeditor.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>const BASE_URL = "' . base_url() . '";</script>
-    <script src="' . BASE_URL('public/client/js/course-builder.js') . '"></script>
+    <script src="' . BASE_URL('public/client/js/course-builder.js') . '?v=' . filemtime(__DIR__ . '/../../public/client/js/course-builder.js') . '"></script>
 ';
 
 require_once(__DIR__ . '/../../models/is_admin.php');
@@ -52,10 +52,10 @@ if ($mode == 'edit') {
                         <button class="nav-link active" id="info-tab" data-bs-toggle="tab" data-bs-target="#info" type="button" role="tab" aria-controls="info" aria-selected="true">Thông tin khoá học</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="false">Nội dung khoá học</button>
+                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="curriculum-tab" data-bs-toggle="tab" data-bs-target="#curriculum" type="button" role="tab" aria-controls="curriculum" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Nội dung khoá học</button>
                     </li>
                     <li class="nav-item" role="presentation">
-                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false">Học viên</button>
+                        <button class="nav-link <?= $mode == 'create' ? 'disabled' : '' ?>" id="students-tab" data-bs-toggle="tab" data-bs-target="#students" type="button" role="tab" aria-controls="students" aria-selected="false" <?= $mode == 'create' ? 'disabled' : '' ?>>Học viên</button>
                     </li>
                 </ul>
                 <div class="tab-content" id="courseBuilderTabsContent">
@@ -92,7 +92,7 @@ if ($mode == 'edit') {
                                         <label class="form-label">Độ khó (Level)</label>
                                         <select class="form-select" name="level" id="level">
                                             <option value="all">Tất cả</option>
-                                            <option value="basic">Cơ bản</option>
+                                            <option value="beginner">Cơ bản</option>
                                             <option value="intermediate">Trung cấp</option>
                                             <option value="advanced">Nâng cao</option>
                                         </select>
