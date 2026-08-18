@@ -479,7 +479,7 @@ switch ($action) {
         $section = $section_id > 0 ? $SMARTSTUDY->get_row_safe('SELECT id FROM course_sections WHERE id = ? AND course_id = ?', [(int) $section_id, (int) $course_id]) : false;
         
         if ($section && !empty($title)) {
-            $slug = vn2en($title) . '-' . time();
+            $slug = create_slug($title) . '-' . time();
             $duration = validate_int($_POST['duration'] ?? 0);
             $data = [
                 'section_id' => $section_id,

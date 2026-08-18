@@ -133,7 +133,7 @@ class Courses extends DB {
         return $row && $row['total_duration'] ? (int)$row['total_duration'] : 0;
     }
     public function generateSlug($title) {
-        $slug = mb_strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', vn2en($title))));
+        $slug = mb_strtolower(trim(preg_replace('/[^A-Za-z0-9-]+/', '-', create_slug($title))));
         $base_slug = $slug;
         $counter = 1;
         while ($this->num_rows_safe("SELECT id FROM " . $this->_table_name . " WHERE slug = ?", [$slug]) > 0) {
