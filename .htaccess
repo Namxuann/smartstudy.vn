@@ -42,10 +42,10 @@ RewriteCond %{REQUEST_URI} \.(sql|sqlite|sqlite3|db|db3)\.(gz|zip|bz2|xz|7z|rar|
 RewriteRule ^ - [F,L]
 
 #Xử lý Route CTV
-RewriteRule ^ctv/([A-Za-z0-9-]+) index.php?module=ctv&action=$1 [L]
+RewriteRule ^ctv/([A-Za-z0-9-]+) index.php?module=ctv&action=$1 [L,QSA]
 RewriteRule ^ctv index.php?module=ctv&action= [L]
 #Xử lý Route ADMIN
-RewriteRule ^admin/([A-Za-z0-9-]+) index.php?module=admin&action=$1 [L]
+RewriteRule ^admin/([A-Za-z0-9-]+) index.php?module=admin&action=$1 [L,QSA]
 RewriteRule ^admin index.php?module=admin&action= [L]
 #Xử lý Route CLIENT
 RewriteRule ^verify-google-login api/callback_google_login.php [L]
@@ -75,10 +75,10 @@ RewriteRule ^product-orders index.php?module=client&action=product-orders [L]
 RewriteRule ^join/([A-Za-z0-9-]+) index.php?module=client&action=home&aff=$1 [L]
 RewriteRule ^client/home/([A-Za-z0-9-]+) index.php?module=client&action=home&shop=$1 [L]
 RewriteRule ^payment/([A-Za-z0-9-]+) index.php?module=client&action=payment&trans_id=$1 [L]
-RewriteRule ^client/([A-Za-z0-9-]+) index.php?module=client&action=$1 [L]
+RewriteRule ^client/([A-Za-z0-9-]+) index.php?module=client&action=$1 [L,QSA]
 RewriteRule ^client index.php?module=client&action= [L]
 #Xử lý Route COMMON
-RewriteRule ^common/([A-Za-z0-9-]+) index.php?module=common&action=$1 [L]
+RewriteRule ^common/([A-Za-z0-9-]+) index.php?module=common&action=$1 [L,QSA]
 
 
 # Xử lý thay đổi ngôn ngữ từ URL (đặt cuối cùng để tránh xung đột)
