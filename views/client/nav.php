@@ -101,9 +101,6 @@
                             <li class="navbar-item"><a class="navbar-link"
                                     href="<?= base_url(''); ?>"><?= __('Trang chủ'); ?></a>
                             </li>
-                            <li class="navbar-item"><a class="navbar-link"
-                                    href="<?= base_url(''); ?>"><?= __('Khoá học'); ?></a>
-                            </li>
                             <?php if (isset($getUser)): ?>
                             <li class="navbar-item"><a class="navbar-link"
                                     href="<?= base_url('client/my-courses'); ?>"><?= __('Khoá học của tôi'); ?></a>
