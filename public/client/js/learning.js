@@ -169,17 +169,44 @@ class LearningApp {
         }
     }
 
+    extractYouTubeId(url) {
+        if (!url) return null;
+        const s = String(url);
+        let id = null;
+        if (s.indexOf('youtu.be/') !== -1) {
+            id = s.split('youtu.be/')[1];
+        } else if (s.indexOf('watch?v=') !== -1) {
+            id = s.split('watch?v=')[1];
+        } else if (s.indexOf('youtube.com/embed/') !== -1) {
+            id = s.split('youtube.com/embed/')[1];
+        } else if (s.indexOf('youtube.com/shorts/') !== -1) {
+            id = s.split('youtube.com/shorts/')[1];
+        }
+        if (!id) return null;
+        id = id.split('&')[0].split('#')[0].split('?')[0];
+        return id.substring(0, 11);
+    }
+
     renderLessonContent(lesson) {
         let html = `<h2 class="mb-4 fw-bold">${lesson.title}</h2>`;
 
         if (lesson.type === 'video') {
-            html += `
-                <div class="video-container mb-4">
-                    <video id="player" playsinline controls>
-                        <source src="${lesson.media_url}" type="video/mp4" />
-                    </video>
-                </div>
-            `;
+            const youtubeId = this.extractYouTubeId(lesson.media_url);
+            if (youtubeId) {
+                html += `
+                    <div class="video-container mb-4">
+                        <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${youtubeId}"></div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="video-container mb-4">
+                        <video id="player" playsinline controls>
+                            <source src="${lesson.media_url}" type="video/mp4" />
+                        </video>
+                    </div>
+                `;
+            }
             html += `<div class="lesson-html-content">${lesson.content || ''}</div>`;
             $('#lessonContent').html(html);
 

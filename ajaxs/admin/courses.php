@@ -14,6 +14,26 @@ $coursesDB = new Courses();
 $enrollmentsDB = new Enrollments();
 $mediaManager = new MediaManager($SMARTSTUDY);
 
+function lms_resolve_lesson_media($mediaManager, $getUser)
+{
+    $media_url = check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? '')));
+    $fileMap = [
+        'video_file' => 'video',
+        'audio_file' => 'audio',
+        'pdf_file'   => 'document'
+    ];
+    foreach ($fileMap as $field => $category) {
+        if (isset($_FILES[$field]) && isset($_FILES[$field]['error']) && $_FILES[$field]['error'] === UPLOAD_ERR_OK) {
+            $res = $mediaManager->uploadFile($_FILES[$field], $getUser['id'], $category);
+            if (!empty($res['status'])) {
+                $media_url = base_url($res['file_path']);
+            }
+            break;
+        }
+    }
+    return $media_url;
+}
+
 $action = isset($_POST['action']) ? check_string($_POST['action']) : (isset($_GET['action']) ? check_string($_GET['action']) : '');
 
 header('Content-Type: application/json; charset=utf-8');
@@ -488,7 +508,7 @@ switch ($action) {
                 'slug' => check_string($slug),
                 'lesson_type' => $type,
                 'content' => $_POST['content'] ?? '',
-                'media_url' => check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? ''))),
+                'media_url' => lms_resolve_lesson_media($mediaManager, $getUser),
                 'media_duration' => $duration === false ? 0 : $duration,
                 'embed_code' => $_POST['embed_code'] ?? '',
                 'is_free_preview' => (int) ($_POST['is_free_preview'] ?? ($_POST['is_free'] ?? 0)) === 1 ? 1 : 0,
@@ -529,7 +549,7 @@ switch ($action) {
             'title' => $title,
             'content' => $_POST['content'] ?? '',
             'lesson_type' => $lessonType,
-            'media_url' => check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? ''))),
+            'media_url' => lms_resolve_lesson_media($mediaManager, $getUser),
             'media_duration' => $duration === false ? 0 : $duration,
             'embed_code' => $_POST['embed_code'] ?? '',
             'is_free_preview' => (int) ($_POST['is_free_preview'] ?? ($_POST['is_free'] ?? 0)) === 1 ? 1 : 0,
