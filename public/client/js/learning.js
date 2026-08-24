@@ -171,20 +171,28 @@ class LearningApp {
 
     extractYouTubeId(url) {
         if (!url) return null;
-        const s = String(url);
-        let id = null;
-        if (s.indexOf('youtu.be/') !== -1) {
-            id = s.split('youtu.be/')[1];
-        } else if (s.indexOf('watch?v=') !== -1) {
-            id = s.split('watch?v=')[1];
-        } else if (s.indexOf('youtube.com/embed/') !== -1) {
-            id = s.split('youtube.com/embed/')[1];
-        } else if (s.indexOf('youtube.com/shorts/') !== -1) {
-            id = s.split('youtube.com/shorts/')[1];
+        try {
+            const parsed = new URL(String(url), window.location.origin);
+            const hostname = parsed.hostname.replace(/^www\./, '').replace(/^m\./, '');
+            let id = null;
+
+            if (hostname === 'youtu.be') {
+                id = parsed.pathname.split('/').filter(Boolean)[0];
+            } else if (hostname === 'youtube.com' || hostname === 'youtube-nocookie.com') {
+                if (parsed.pathname === '/watch') {
+                    id = parsed.searchParams.get('v');
+                } else {
+                    const parts = parsed.pathname.split('/').filter(Boolean);
+                    if (['embed', 'shorts', 'live'].includes(parts[0])) {
+                        id = parts[1];
+                    }
+                }
+            }
+
+            return id && /^[A-Za-z0-9_-]{11}$/.test(id) ? id : null;
+        } catch (error) {
+            return null;
         }
-        if (!id) return null;
-        id = id.split('&')[0].split('#')[0].split('?')[0];
-        return id.substring(0, 11);
     }
 
     renderLessonContent(lesson) {
@@ -198,17 +206,23 @@ class LearningApp {
                         <div id="player" data-plyr-provider="youtube" data-plyr-embed-id="${youtubeId}"></div>
                     </div>
                 `;
-            } else {
+            } else if (lesson.media_url) {
                 html += `
                     <div class="video-container mb-4">
                         <video id="player" playsinline controls>
-                            <source src="${lesson.media_url}" type="video/mp4" />
+                            <source src="${lesson.media_url}" />
                         </video>
                     </div>
                 `;
+            } else {
+                html += '<div class="alert alert-warning">Bài học chưa có nguồn video.</div>';
             }
             html += `<div class="lesson-html-content">${lesson.content || ''}</div>`;
             $('#lessonContent').html(html);
+
+            if (!document.querySelector('#player')) {
+                return;
+            }
 
             this.player = new Plyr('#player');
             if (lesson.progress && lesson.progress.last_position) {

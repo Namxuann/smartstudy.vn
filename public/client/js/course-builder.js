@@ -259,8 +259,14 @@ $(document).ready(function() {
                         
                         if (type === 'text' && l.content) {
                             ckeditorInstances['lesson_content_text'].setData(l.content);
+                        } else if (type === 'video') {
+                            $('#lesson-content-area [name="video_url"]').val(l.media_url || '');
+                            $('#lesson-content-area [name="duration"]').val(l.media_duration || '');
+                        } else if (type === 'audio') {
+                            $('#lesson-content-area [name="audio_url"]').val(l.media_url || '');
+                        } else if (type === 'embed') {
+                            $('#lesson-content-area [name="embed_code"]').val(l.embed_code || '');
                         }
-                        // Set other fields based on type...
                     }
                 }
             });

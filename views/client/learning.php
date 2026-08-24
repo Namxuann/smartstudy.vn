@@ -111,6 +111,6 @@ $body = [
         const COURSE_ID = <?=$course_id;?>;
         const INITIAL_LESSON_ID = <?=$initialLessonId ? $initialLessonId : 'null';?>;
     </script>
-    <script src="<?=BASE_URL('public/client/js/learning.js');?>"></script>
+    <script src="<?=BASE_URL('public/client/js/learning.js');?>?v=<?=filemtime(__DIR__ . '/../../public/client/js/learning.js');?>"></script>
 </body>
 </html>

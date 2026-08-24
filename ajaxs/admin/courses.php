@@ -14,9 +14,10 @@ $coursesDB = new Courses();
 $enrollmentsDB = new Enrollments();
 $mediaManager = new MediaManager($SMARTSTUDY);
 
-function lms_resolve_lesson_media($mediaManager, $getUser)
+function lms_resolve_lesson_media($mediaManager, $getUser, $existingMediaUrl = '')
 {
-    $media_url = check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? '')));
+    $submittedMediaUrl = check_string($_POST['media_url'] ?? ($_POST['video_url'] ?? ($_POST['audio_url'] ?? '')));
+    $media_url = $submittedMediaUrl !== '' ? $submittedMediaUrl : (string) $existingMediaUrl;
     $fileMap = [
         'video_file' => 'video',
         'audio_file' => 'audio',
@@ -549,7 +550,7 @@ switch ($action) {
             'title' => $title,
             'content' => $_POST['content'] ?? '',
             'lesson_type' => $lessonType,
-            'media_url' => lms_resolve_lesson_media($mediaManager, $getUser),
+            'media_url' => lms_resolve_lesson_media($mediaManager, $getUser, $existingLesson['media_url'] ?? ''),
             'media_duration' => $duration === false ? 0 : $duration,
             'embed_code' => $_POST['embed_code'] ?? '',
             'is_free_preview' => (int) ($_POST['is_free_preview'] ?? ($_POST['is_free'] ?? 0)) === 1 ? 1 : 0,
