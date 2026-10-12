@@ -6294,6 +6294,15 @@ tbody tr td:last-child {
     background: var(--white)
 }
 
+.blog-widget img {
+    max-width: 100% !important;
+    height: auto !important;
+    width: auto !important;
+    display: block;
+    margin: 15px auto;
+    border-radius: 8px
+}
+
 .blog-widget:last-child {
     margin-bottom: 0px
 }
