@@ -637,55 +637,91 @@
 <?= $SMARTSTUDY->site('javascript_footer'); ?>
 
 <?php
-// === Auto-redirect to login after 60s for guests ===
-// Không áp dụng cho: trang login, register, forgot-password, reset-password, verify_otp, verify_2fa, maintenance, banned
+// === Auto-redirect to login after 60s total browsing time (guests only) ===
+// Mốc hết hạn lưu trong cookie nên thời gian tính xuyên suốt mọi trang,
+// không bị reset khi reload hoặc chuyển trang.
+// Không áp dụng cho: login, register, forgot-password, reset-password,
+// verify_otp, verify_2fa, maintenance, banned, 404, set-language
 $guest_exempt_actions = ['login', 'register', 'forgot-password', 'reset-password', 'verify_otp', 'verify_2fa', 'maintenance', 'banned', '404', 'set-language'];
 $current_action = isset($action) ? $action : '';
-if (!isSecureCookie('user_login') && !isSecureCookie('admin_login') && !in_array($current_action, $guest_exempt_actions)):
+$is_guest = !isSecureCookie('user_login') && !isSecureCookie('admin_login');
+$guest_cookie_secure = ((!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+    || (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https')) ? '; Secure' : '';
+
+if ($is_guest && !in_array($current_action, $guest_exempt_actions, true)):
 ?>
 <script>
 (function() {
-    var REDIRECT_DELAY = 60; // seconds
-    var LOGIN_URL = '<?= base_url("client/login"); ?>';
-    var timer = null;
-    var remaining = REDIRECT_DELAY;
+    var DELAY_MS   = 60000; // tổng thời gian cho phép xem trước khi bắt buộc đăng nhập
+    var COOKIE     = 'ss_guest_deadline';
+    var COOKIE_OPT = '; path=/; SameSite=Lax<?= $guest_cookie_secure; ?>';
+    var LOGIN_URL  = '<?= base_url("client/login"); ?>';
 
-    // Create floating countdown banner
+    function readDeadline() {
+        var m = document.cookie.match(/(?:^|;\s*)ss_guest_deadline=([^;]*)/);
+        return m ? parseInt(decodeURIComponent(m[1]), 10) : NaN;
+    }
+    function writeDeadline(ts) {
+        document.cookie = COOKIE + '=' + ts + COOKIE_OPT;
+    }
+
+    var now = Date.now();
+    var deadline = readDeadline();
+
+    // Lần đầu truy cập, hoặc cookie lỗi/bị sửa thành mốc quá xa -> đặt lại mốc mới
+    if (!deadline || isNaN(deadline) || deadline > now + DELAY_MS) {
+        deadline = now + DELAY_MS;
+        writeDeadline(deadline);
+    }
+
+    // Đã hết thời gian -> chuyển hướng ngay, không cần hiện banner
+    if (deadline - now <= 0) {
+        window.location.replace(LOGIN_URL);
+        return;
+    }
+
+    function secondsLeft() {
+        return Math.max(0, Math.ceil((deadline - Date.now()) / 1000));
+    }
+
     function createBanner() {
         var banner = document.createElement('div');
         banner.id = 'ss-login-banner';
-        banner.innerHTML = 
+        banner.innerHTML =
             '<div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">' +
-            '<span>Bạn cần <strong>đăng nhập</strong> hoặc <strong>đăng ký</strong> để tiếp tục sử dụng. Tự động chuyển hướng sau <strong id="ss-countdown">' + REDIRECT_DELAY + '</strong> giây.</span>' +
+            '<span>Bạn cần <strong>đăng nhập</strong> hoặc <strong>đăng ký</strong> để tiếp tục sử dụng. Tự động chuyển hướng sau <strong id="ss-countdown">' + secondsLeft() + '</strong> giây.</span>' +
             '<a href="' + LOGIN_URL + '" style="background:#fff;color:var(--primary,#4361ee);padding:6px 18px;border-radius:6px;text-decoration:none;font-weight:600;white-space:nowrap;">Đăng nhập ngay</a>' +
             '</div>';
         banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:var(--primary,#4361ee);color:#fff;padding:14px 20px;font-size:15px;text-align:center;box-shadow:0 -2px 12px rgba(0,0,0,0.15);transition:transform 0.4s ease;transform:translateY(100%);';
         document.body.appendChild(banner);
-        // Slide in after 100ms
         setTimeout(function() { banner.style.transform = 'translateY(0)'; }, 100);
-        return banner;
     }
 
     function startCountdown() {
-        var banner = createBanner();
+        createBanner();
         var countdownEl = document.getElementById('ss-countdown');
-        timer = setInterval(function() {
-            remaining--;
-            if (countdownEl) countdownEl.textContent = remaining;
-            if (remaining <= 0) {
+        var timer = setInterval(function() {
+            // Tính lại từ mốc hết hạn nên vẫn đúng khi tab bị trình duyệt làm chậm
+            var left = secondsLeft();
+            if (countdownEl) countdownEl.textContent = left;
+            if (left <= 0) {
                 clearInterval(timer);
-                window.location.href = LOGIN_URL;
+                window.location.replace(LOGIN_URL);
             }
         }, 1000);
     }
 
-    // Start countdown when page is ready
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', startCountdown);
     } else {
         startCountdown();
     }
 })();
+</script>
+<?php elseif (!$is_guest): ?>
+<script>
+// Đã đăng nhập -> xóa mốc hết hạn để lần sau đăng xuất được tính lại từ đầu
+document.cookie = 'ss_guest_deadline=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 </script>
 <?php endif; ?>
 
