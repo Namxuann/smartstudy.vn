@@ -635,6 +635,60 @@
 
 <?= $body['footer']; ?>
 <?= $SMARTSTUDY->site('javascript_footer'); ?>
+
+<?php
+// === Auto-redirect to login after 60s for guests ===
+// Không áp dụng cho: trang login, register, forgot-password, reset-password, verify_otp, verify_2fa, maintenance, banned
+$guest_exempt_actions = ['login', 'register', 'forgot-password', 'reset-password', 'verify_otp', 'verify_2fa', 'maintenance', 'banned', '404', 'set-language'];
+$current_action = isset($action) ? $action : '';
+if (!isSecureCookie('user_login') && !isSecureCookie('admin_login') && !in_array($current_action, $guest_exempt_actions)):
+?>
+<script>
+(function() {
+    var REDIRECT_DELAY = 60; // seconds
+    var LOGIN_URL = '<?= base_url("client/login"); ?>';
+    var timer = null;
+    var remaining = REDIRECT_DELAY;
+
+    // Create floating countdown banner
+    function createBanner() {
+        var banner = document.createElement('div');
+        banner.id = 'ss-login-banner';
+        banner.innerHTML = 
+            '<div style="display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;">' +
+            '<span>Bạn cần <strong>đăng nhập</strong> hoặc <strong>đăng ký</strong> để tiếp tục sử dụng. Tự động chuyển hướng sau <strong id="ss-countdown">' + REDIRECT_DELAY + '</strong> giây.</span>' +
+            '<a href="' + LOGIN_URL + '" style="background:#fff;color:var(--primary,#4361ee);padding:6px 18px;border-radius:6px;text-decoration:none;font-weight:600;white-space:nowrap;">Đăng nhập ngay</a>' +
+            '</div>';
+        banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:99999;background:var(--primary,#4361ee);color:#fff;padding:14px 20px;font-size:15px;text-align:center;box-shadow:0 -2px 12px rgba(0,0,0,0.15);transition:transform 0.4s ease;transform:translateY(100%);';
+        document.body.appendChild(banner);
+        // Slide in after 100ms
+        setTimeout(function() { banner.style.transform = 'translateY(0)'; }, 100);
+        return banner;
+    }
+
+    function startCountdown() {
+        var banner = createBanner();
+        var countdownEl = document.getElementById('ss-countdown');
+        timer = setInterval(function() {
+            remaining--;
+            if (countdownEl) countdownEl.textContent = remaining;
+            if (remaining <= 0) {
+                clearInterval(timer);
+                window.location.href = LOGIN_URL;
+            }
+        }, 1000);
+    }
+
+    // Start countdown when page is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', startCountdown);
+    } else {
+        startCountdown();
+    }
+})();
+</script>
+<?php endif; ?>
+
 </body>
 
 </html>
