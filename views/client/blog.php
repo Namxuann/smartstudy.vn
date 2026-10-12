@@ -60,7 +60,7 @@ require_once(__DIR__.'/nav.php');
                         <?php foreach($SMARTSTUDY->get_list_safe("SELECT * FROM `posts` WHERE `status` = ? ORDER BY `view` DESC", [1]) as $popular):?>
                         <li>
                             <a class="blog-widget-media" href="<?=base_url('blog/'.$popular['slug']);?>">
-                                <img style="height: 100%;" src="<?=base_url($popular['image']);?>" alt="blog-widget">
+                                <img src="<?=base_url($popular['image']);?>" alt="blog-widget">
                             </a>
                             <h6 class="blog-widget-text"><a
                                     href="<?=base_url('blog/'.$popular['slug']);?>"><?=$popular['title'];?></a><span

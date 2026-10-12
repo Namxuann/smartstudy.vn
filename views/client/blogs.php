@@ -145,7 +145,7 @@ $urlDatatable = pagination_client(base_url("?action=blogs&limit=$limit&keyword=$
                             <div class="blog-card">
                                 <div class="blog-media"><a class="blog-img"
                                         href="<?=base_url('blog/'.$row['slug']);?>"><img
-                                            style="width: 100%; height: 300px;" src="<?=base_url($row['image']);?>"
+                                            style="width:100%;" src="<?=base_url($row['image']);?>"
                                             alt="blog"></a></div>
                                 <div class="blog-content">
                                     <ul class="blog-meta">
