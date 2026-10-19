@@ -14,10 +14,10 @@ checkMaintenance();
   <title><?= isset($body['title']) ? $body['title'] : $SMARTSTUDY->site('title'); ?></title>
   <meta name="description" content="<?= isset($body['desc']) ? $body['desc'] : $SMARTSTUDY->site('description'); ?>" />
   <meta name="keywords" content="<?= isset($body['keyword']) ? $body['keyword'] : $SMARTSTUDY->site('keywords'); ?>">
-  <?php // Kiểm tra nếu trang yêu cầu không lập chỉ mục tìm kiếm (noindex)
-  if (isset($body['noindex']) && $body['noindex'] === true): ?>
-  <meta name="robots" content="noindex, nofollow" />
-  <?php endif; ?>
+  <?php // Website chỉ nhận direct traffic: chặn mọi công cụ tìm kiếm lập chỉ mục toàn site
+  // (trước đây chỉ noindex khi $body['noindex'] === true)
+  ?>
+  <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, noimageindex" />
   <meta name="copyright" content="<?= $SMARTSTUDY->site('author'); ?>" />
   <meta name="author" content="<?= $SMARTSTUDY->site('author'); ?>" />
   <meta property="og:url" content="<?= base_url(''); ?>">

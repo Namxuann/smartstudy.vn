@@ -1,5 +1,8 @@
 User-agent: *
+Disallow: /
 
-Disallow:
+User-agent: Googlebot
+Disallow: /
 
-Sitemap: https://smartstudy.vn/sitemap.xml
+User-agent: Bingbot
+Disallow: /

@@ -98,6 +98,9 @@ $SMARTSTUDY->remove('order_log', " " . time() . " - `create_time` >= 604800 ");
 
 
 
+// Sitemap đã bị tắt: website chỉ nhận direct traffic, không cho công cụ tìm kiếm lập chỉ mục.
+// Toàn bộ khối sinh sitemap.xml được vô hiệu hoá (giữ lại để tham khảo khi cần bật SEO trở lại).
+/*
 // Thêm các URL của trang web của bạn vào mảng này
 $urls = array();
 $urls[] = base_url(); // Thêm liên kết trang chủ của website vào sitemap
@@ -135,3 +138,5 @@ foreach ($urls as $url) {
 $xml->appendChild($urlset);
 // Lưu sitemap vào một tệp
 $xml->save('../sitemap.xml');
+// (sitemap.xml cũng đã được xoá khỏi hosting — không tạo lại)
+*/
