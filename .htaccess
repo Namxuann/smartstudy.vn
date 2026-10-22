@@ -86,22 +86,3 @@ RewriteRule ^common/([A-Za-z0-9-]+) index.php?module=common&action=$1 [L,QSA]
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
 RewriteRule ^([a-z]{2,5})/?$ views/client/set-language.php?lang=$1 [L,QSA]
-
-# ============================================================
-# BLOCK SEARCH ENGINES / CRAWLERS - website chỉ nhận direct traffic
-# (thêm 2026-10-19 theo yêu cầu chủ site: không cho Google/Bing/... index)
-# ============================================================
-<IfModule mod_headers.c>
-    <FilesMatch "\.(html?|php)$">
-        Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex"
-    </FilesMatch>
-    Header always set X-Robots-Tag "noindex, nofollow, noarchive, nosnippet, noimageindex"
-</IfModule>
-
-# Chặn robots.txt, sitemap.xml (đã xoá) và các bản sao sitemap
-RewriteRule ^robots\.txt$ - [R=404,L]
-RewriteRule ^sitemap(_index)?\.xml$ - [R=404,L]
-
-# Chặn cứng theo User-Agent các bot tìm kiếm / crawler phổ biến
-RewriteCond %{HTTP_USER_AGENT} (googlebot|google-inspectiontool|mediapartners-google|adsbot-google|bingbot|msnbot|slurp|duckduckbot|baiduspider|yandex(bot|images)?|sogou|exabot|facebookexternalhit|facebot|twitterbot|linkedinbot|pinterestbot|applebot|petalbot|semrushbot|ahrefsbot|mj12bot|dotbot|seznambot|gptbot|chatgpt-user|oai-searchbot|claudebot|anthropic-ai|perplexitybot|ccbot|bytespider|amazonbot|ia_archiver) [NC]
-RewriteRule .* - [F,L]
